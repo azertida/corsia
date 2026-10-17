@@ -157,7 +157,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.4';
+  const VERSION = '3.5';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -475,6 +475,11 @@
         <label class="champ">Ton surnom dans le cercle
           <input type="text" id="surnom" maxlength="20" value="${esc(choix.surnom)}" autocomplete="nickname" placeholder="Prénom ou petit nom">
         </label>
+        <div class="encadre" id="homonyme" hidden>
+          <strong>Quelqu’un du cercle utilise déjà ce surnom avec cet animal.</strong>
+          <p>Pour qu’on ne vous confonde pas, choisis un autre animal ou un autre surnom. Si c’est toi, sur un autre appareil, tu peux continuer.</p>
+          <div class="rangee"><button class="btn plein" id="jeChange">Je change</button><button class="btn discret" id="cestMoi">C’est bien moi</button></div>
+        </div>
         <button class="btn plein" id="enregistrer">C’est moi</button>
         ${premier ? '' : `
         <div class="encadre">
@@ -496,10 +501,21 @@
     const cs = document.getElementById('copierSecours'); if (cs) cs.onclick = () => copier(lienPersonnel(), 'Lien de secours copié');
     const ps = document.getElementById('partagerSecours');
     if (ps) ps.onclick = () => navigator.share({ title: 'Mon lien Corsia', url: lienPersonnel() }).catch(() => {});
+    let confirme = false;
+    const alerte = document.getElementById('homonyme');
+    document.getElementById('jeChange').onclick = () => { alerte.hidden = true; document.getElementById('surnom').focus(); };
+    document.getElementById('cestMoi').onclick = () => { confirme = true; alerte.hidden = true; document.getElementById('enregistrer').click(); };
+    $app.querySelectorAll('.animal').forEach((b) => b.addEventListener('click', () => { alerte.hidden = true; confirme = false; }));
+    document.getElementById('surnom').addEventListener('input', () => { alerte.hidden = true; confirme = false; });
     document.getElementById('enregistrer').onclick = async (e) => {
       choix.surnom = document.getElementById('surnom').value.trim();
       if (!choix.animal) return dire('Choisis d’abord un animal 🙂');
       if (!choix.surnom) return dire('Indique un surnom');
+      // Même surnom et même animal déjà utilisés par une autre inscription à venir ?
+      const mesIds = new Set(Object.values(miennes).map((m) => m.id));
+      const pris = (donnees?.inscriptions || []).some((i) => !mesIds.has(i.id)
+        && i.animal === choix.animal && i.surnom.trim().toLowerCase() === choix.surnom.toLowerCase());
+      if (pris && !confirme) { alerte.hidden = false; alerte.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
       e.target.disabled = true;
       const ancien = profil;
       profil = choix; ecrire('profil', profil);
