@@ -18,7 +18,7 @@ On partage sa présence, pas sa vie :
   - **Chaque jeudi** (ou « Un vendredi sur deux ») : on en fait une habitude ; à chaque ouverture, Corsia inscrit aux séances correspondantes des 7 prochains jours ;
   - **Cette fois** : on vient à une seule séance, hors de ses habitudes ;
   - **Pas cette fois** : on se retire d'une séance sans toucher à ses habitudes ;
-  - **Ne plus venir chaque jeudi** / **En faire une habitude** : on change d'avis dans un sens ou dans l'autre (une séance déjà prévue le reste, en « cette fois »).
+  - **Ne plus y aller chaque jeudi** / **En faire une habitude** : on change d'avis dans un sens ou dans l'autre (une séance déjà prévue le reste, en « cette fois »).
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
 - **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).
 - **Mes cours / Tous les cours** : l'écran de la semaine montre par défaut ses propres cours.

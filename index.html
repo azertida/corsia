@@ -160,7 +160,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.11';
+  const VERSION = '3.12';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -306,6 +306,23 @@
     ecrire('miennes', miennes);
   }
 
+  // Une inscription faite sous mon surnom et mon animal, mais dont ce téléphone n'a pas le jeton
+  // (réinstallation, lien de secours, autre appareil) : je la reprends. Le serveur remplace l'ancienne
+  // et garde sa réaction.
+  async function reprendreLesMiennes() {
+    if (!profil || !donnees) return false;
+    const moi = (i) => i.surnom.toLowerCase() === profil.surnom.toLowerCase() && i.animal === profil.animal;
+    let change = false;
+    for (const s of seances()) {
+      if (s.coupure || miennes[s.cle]) continue;
+      if (donnees.inscriptions.some((i) => i.cours === s.cours.id && i.date === s.date && moi(i))) {
+        try { await inscrire(s, habitudes.includes(s.cours.id) ? 'habitude' : 'ponctuel'); delete absences[s.cle]; change = true; } catch {}
+      }
+    }
+    if (change) ecrire('absences', absences);
+    return change;
+  }
+
   // À chaque ouverture : inscription aux séances habituelles des 7 prochains jours.
   async function appliquerHabitudes() {
     if (!profil || lire('pause', false)) return false;
@@ -324,7 +341,8 @@
     donnees = await api('semaine', null, params);
     if (donnees.nom && donnees.nom !== cercle.nom) { cercle.nom = donnees.nom; ecrire('cercle', cercle); }
     nettoyer();
-    if (await appliquerHabitudes()) donnees = await api('semaine', null, params);
+    const repris = await reprendreLesMiennes();
+    if (await appliquerHabitudes() || repris) donnees = await api('semaine', null, params);
   }
 
   /* ---------- Lien personnel : cercle, surnom, animal et habitudes (jamais la clé de gestion) ---------- */
@@ -578,7 +596,7 @@
       const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
 
       const chaque = c.rythme === 2 ? `Un ${JOURS[c.jour]} sur deux` : `Chaque ${JOURS[c.jour]}`;
-      const plusChaque = `<button class="btn discret petit secondaire" data-oublier="${c.id}">Ne plus venir ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
+      const plusChaque = `<button class="btn discret petit secondaire" data-oublier="${c.id}">Ne plus y aller ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
       let action;
       if (moi) {
         const actuelles = (reactionDe.get(moi.id) || '').split(',');
