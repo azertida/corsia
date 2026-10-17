@@ -157,7 +157,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.6';
+  const VERSION = '3.7';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -165,7 +165,7 @@
   const ANIMAUX = [
     ['poulpe', 'Poulpe'], ['capybara', 'Capybara'], ['loutre', 'Loutre'], ['tortue', 'Tortue'],
     ['meduse', 'Méduse'], ['dauphin', 'Dauphin'], ['phoque', 'Phoque'], ['manchot', 'Manchot'],
-    ['baleine', 'Baleine'], ['grenouille', 'Grenouille'], ['poisson-globe', 'Poisson-globe'], ['crabe', 'Crabe'],
+    ['baleine', 'Baleine'], ['grenouille', 'Grenouille'], ['raie', 'Raie manta'], ['hippocampe', 'Hippocampe'],
   ];
   const FOND = { poulpe: '#FBE3DA', capybara: '#F3E6D6', loutre: '#F3E6D6', tortue: '#E2EEDA', meduse: '#EEE5F7',
                  dauphin: '#E3EEF4', phoque: '#E9ECEF', manchot: '#E9ECEF', baleine: '#E3EEF4', grenouille: '#E2EEDA',
@@ -491,7 +491,7 @@
             <button class="btn" id="copierSecours">Copier</button>
           </div>
         </div>`}
-        <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara créé avec ChatGPT</p>
+        <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara, raie manta et hippocampe créés avec ChatGPT</p>
       </div>`;
     $app.querySelectorAll('.animal').forEach((b) => b.onclick = () => {
       choix.animal = b.dataset.animal;

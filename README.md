@@ -79,7 +79,7 @@ Ce dépôt contient une copie de `serveur/api.php` pour garder son historique. G
 ## Crédits
 
 - Illustrations des animaux : [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji), licence MIT (voir `animaux/LICENCE-Fluent-Emoji.txt`).
-- Capybara : illustration créée avec ChatGPT, dans le style des précédentes.
+- Capybara, raie manta et hippocampe : illustrations créées avec ChatGPT, dans le style des précédentes.
 - Polices : Fraunces et Atkinson Hyperlegible, licence SIL OFL 1.1 (voir `polices/`).
 - QR code : [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) de Kazuhiko Arase, licence MIT (mention dans `qrcode.js`).
 - Icône : inspirée de l'icône de l'appli Croisement.
