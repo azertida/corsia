@@ -117,7 +117,7 @@
 
   .coche { display: flex; align-items: center; gap: 12px; min-height: 48px; font-weight: 700; }
   .coche input { width: 26px; height: 26px; accent-color: var(--bleu); flex: none; }
-  .bloc-cours { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--bord); }
+  .bloc-cours { display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-bottom: 1px solid var(--bord); }
   .bloc-cours:last-child { border-bottom: none; }
   .bloc-cours .titre { font-weight: 700; }
   .bloc-cours .detail { font-size: 15px; color: var(--doux); }
@@ -157,7 +157,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.5';
+  const VERSION = '3.6';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -735,6 +735,26 @@
       </div>`;
   }
 
+  /* Regroupe les créneaux par nom de cours (Aquafit, Aqua senior…), dans l'ordre alphabétique,
+     les créneaux d'un même cours étant triés du lundi au dimanche. */
+  function groupes(cours) {
+    const m = new Map();
+    for (const c of cours) {
+      const k = c.nom.trim();
+      const cle = [...m.keys()].find((x) => x.toLocaleLowerCase('fr') === k.toLocaleLowerCase('fr')) || k;
+      if (!m.has(cle)) m.set(cle, []);
+      m.get(cle).push(c);
+    }
+    const ordre = (c) => (c.rythme === 0 ? '9' + c.ref : '0' + c.jour + c.heure);
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr', { sensitivity: 'base' }))
+      .map(([n, l]) => [n, l.sort((a, b) => ordre(a).localeCompare(ordre(b)))]);
+  }
+  function creneauFr(c) {
+    const j = JOURS[c.jour][0].toUpperCase() + JOURS[c.jour].slice(1);
+    return c.rythme === 2 ? `${j} ${heureFr(c.heure)} <span class="detail" style="font-weight:400">· une semaine sur deux${c.ref > aujourdhui() ? `, à partir du ${dateCourte(c.ref)}` : ''}</span>`
+                          : `${j} ${heureFr(c.heure)}`;
+  }
+
   function prochaineFr(c) {
     const d0 = new Date();
     for (let i = 0; i < 400; i++) {
@@ -764,21 +784,23 @@
       <div class="pile">
         <h2 class="titre-ecran">Les cours</h2>
         <p class="doux">Tous les cours du cercle. Coche ceux où tu vas d’habitude${NB}: Corsia t’y inscrira, et tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
+        ${cours.length ? groupes(cours).map(([nom, liste]) => `
         <div class="carte">
-          ${cours.length ? cours.map((c) => `
+          <h3>${esc(nom)}</h3>
+          ${liste.map((c) => `
             <div class="bloc-cours">
               ${c.rythme === 0
-                ? `<div><div class="titre">${esc(c.nom)}</div><div class="detail">${rythmeFr(c)}</div></div>`
+                ? `<div class="detail" style="color:var(--encre);font-weight:700">${rythmeFr(c)}</div>`
                 : `<label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
-                    <span>${esc(c.nom)}<br><span class="detail" style="font-weight:400">${rythmeFr(c)}</span></span></label>`}
+                    <span>${creneauFr(c)}</span></label>`}
               <div class="detail">${prochaineFr(c)}</div>
               ${inter.filter((i) => i.cours === c.id).map(ligneCoupure).join('')}
               ${admin ? `<div class="outils">
                   ${c.rythme !== 0 ? `<button class="lien" data-ouvrir="${c.id}">Interrompre</button>` : ''}
                   <button class="lien" data-supprimer="${c.id}">Supprimer</button></div>
                   ${ouvert === c.id ? formulaireCoupure(c.id) : ''}` : ''}
-            </div>`).join('') : '<p class="doux">Aucun cours pour l’instant.</p>'}
-        </div>
+            </div>`).join('')}
+        </div>`).join('') : '<div class="carte"><p class="doux">Aucun cours pour l’instant.</p></div>'}
 
         ${admin || inter.some((i) => !i.cours) ? `
           <h2>Fermetures du club</h2>
