@@ -83,6 +83,20 @@
   input[type=text], input[type=time], input[type=date], select {
     min-height: 50px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-size: 18px; font-weight: 400; width: 100%;
   }
+  /* Safari iOS : les champs date et heure imposent leur propre largeur. On les enferme dans un cadre
+     qui porte la bordure et coupe tout débordement. */
+  label.champ { min-width: 0; }
+  .boite { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+           min-height: 50px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--bord-fort);
+           background: var(--carte); overflow: hidden; min-width: 0; max-width: 100%; font-size: 18px; font-weight: 400; }
+  .boite .valeur { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .boite svg { flex: none; color: var(--doux); }
+  /* Le vrai champ est posé par-dessus, invisible : toucher le cadre ouvre le calendrier de l'iPhone. */
+  .boite input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: none;
+                 opacity: 0; -webkit-appearance: none; appearance: none; font-size: 16px; cursor: pointer; }
+  .boite input:focus-visible { outline: none; }
+  .boite:focus-within { outline: 3px solid #E8A23A; outline-offset: 2px; }
+  input::-webkit-date-and-time-value { text-align: left; }
   input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #E8A23A; outline-offset: 2px; }
 
   .grille-animaux { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -100,7 +114,9 @@
   .bloc-cours .detail { font-size: 15px; color: var(--doux); }
   .outils { display: flex; flex-wrap: wrap; gap: 4px 12px; }
   .interruption { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--sable); border-radius: 10px; padding: 4px 4px 4px 12px; font-size: 15px; }
-  .formulaire { display: flex; flex-direction: column; gap: 10px; background: var(--sable); border-radius: 12px; padding: 12px; }
+  .formulaire { display: flex; flex-direction: column; gap: 10px; background: var(--sable); border-radius: 12px; padding: 12px; min-width: 0; max-width: 100%; overflow: hidden; }
+  .formulaire > *, .carte > *, .bloc-cours > * { min-width: 0; max-width: 100%; }
+  .boite { width: 100%; }
 
   .encadre { background: var(--sable); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
   .cle { font-family: ui-monospace, Menlo, monospace; font-size: 15px; overflow-wrap: anywhere; background: var(--carte); border-radius: 8px; padding: 10px; user-select: all; }
@@ -121,6 +137,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
+  const VERSION = '2.5';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -287,8 +304,24 @@
     if (await appliquerHabitudes()) donnees = await api('semaine', null, params);
   }
 
+  /* Texte affiché dans les cadres de date et d'heure */
+  function majBoites() {
+    document.querySelectorAll('.boite input').forEach((i) => {
+      const v = i.parentElement.querySelector('.valeur');
+      if (!v) return;
+      if (!i.value) { v.textContent = 'Choisir…'; v.classList.add('doux'); return; }
+      v.classList.remove('doux');
+      v.textContent = i.type === 'date'
+        ? premier(new Intl.DateTimeFormat('fr-BE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(versDate(i.value)))
+        : heureFr(i.value);
+    });
+  }
+  document.addEventListener('input', (e) => { if (e.target.closest('.boite')) majBoites(); });
+  document.addEventListener('change', (e) => { if (e.target.closest('.boite')) majBoites(); });
+
   /* ================= Écrans ================= */
-  function afficher() {
+  function afficher() { afficherEcran(); majBoites(); }
+  function afficherEcran() {
     if (!cercle) return ecranAccueil();
     if (ecran === 'cle') return ecranCle();
     if (!profil || ecran === 'profil') return ecranProfil();
@@ -542,8 +575,8 @@
             <option value="0">Séance unique</option>
           </select></label>
         <label class="champ" id="champJour">Jour <select id="jourCours">${options}</select></label>
-        <label class="champ" id="champRef" hidden><span id="libRef">Date de la prochaine séance</span> <input type="date" id="refCours" min="${aujourdhui()}"></label>
-        <label class="champ">Heure <input type="time" id="heureCours" value="19:00"></label>
+        <label class="champ" id="champRef" hidden><span id="libRef">Date de la prochaine séance</span> <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="date" id="refCours" min="${aujourdhui()}"></span></label>
+        <label class="champ">Heure <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg><input type="time" id="heureCours" value="19:00"></span></label>
         <button class="btn plein" id="ajouter">${admin ? 'Ajouter' : 'Proposer'}</button>
         ${admin ? '' : '<p class="doux">La personne qui gère le cercle validera ta proposition.</p>'}
       </div>`;
@@ -573,10 +606,8 @@
   function formulaireCoupure(cible) {
     const auj = aujourdhui();
     return `<div class="formulaire">
-        <div class="rangee">
-          <label class="champ" style="flex:1 1 140px">Du <input type="date" id="du" min="${auj}" value="${auj}"></label>
-          <label class="champ" style="flex:1 1 140px">Au <input type="date" id="au" min="${auj}" value="${auj}"></label>
-        </div>
+        <label class="champ">Du <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="date" id="du" min="${auj}" value="${auj}"></span></label>
+        <label class="champ">Au <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="date" id="au" min="${auj}" value="${auj}"></span></label>
         <p class="doux">Un seul jour${NB}? Mets la même date deux fois. Les inscriptions déjà faites sur ces séances seront retirées.</p>
         <div class="rangee">
           <button class="btn plein petit" id="validerCoupure" data-cible="${cible}">${cible === 'club' ? 'Fermer' : 'Interrompre'}</button>
@@ -650,6 +681,7 @@
         ${admin
           ? '<button class="lien" id="voirCle" style="align-self:center">Afficher ma clé de gestion</button>'
           : '<button class="lien" id="gerer" style="align-self:center">Je gère ce cercle</button>'}
+        <p class="pied">Corsia · version ${VERSION}</p>
       </div>`;
 
     document.getElementById('retour').onclick = async () => { ecran = 'semaine'; ouvert = null; await rafraichir(); };
