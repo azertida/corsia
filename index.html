@@ -160,7 +160,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.9';
+  const VERSION = '3.10';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -586,7 +586,7 @@
           <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)">
             ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
           </div>
-          <button class="btn discret" data-retirer="${s.cle}">${habituel ? 'Pas cette fois' : 'Finalement, je ne viens pas'}</button>
+          <button class="btn discret" data-retirer="${s.cle}">${habituel ? 'Pas cette fois' : 'Finalement, je n’y vais pas'}</button>
           ${habituel ? plusChaque : c.rythme !== 0 ? `<button class="btn discret petit secondaire" data-adopter="${s.cle}">En faire une habitude${NB}: ${chaque.toLowerCase()}</button>` : ''}`;
       } else if (habituel && absences[s.cle]) {
         action = `<div class="doux">Pas cette fois</div>
