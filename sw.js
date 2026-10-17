@@ -1,7 +1,7 @@
 /* Corsia — mise en cache de l'appli pour qu'elle s'ouvre vite.
    À chaque mise à jour, augmenter CACHE_NAME pour que les téléphones reprennent les nouveaux fichiers.
    Le serveur des inscriptions (autre adresse) n'est jamais mis en cache. */
-const CACHE_NAME = 'corsia-v3.3';
+const CACHE_NAME = 'corsia-v3.4';
 const FICHIERS = [
   './', './index.html', './qrcode.js', './manifest.webmanifest',
   './icones/icon-192.png', './icones/icon-512.png', './icones/apple-touch-icon.png', './icones/favicon-32.png',
@@ -26,7 +26,7 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;   // le serveur : jamais en cache
   if (e.request.mode === 'navigate') {
     // La page : d'abord le réseau (pour recevoir les mises à jour), sinon la copie en cache.
-    e.respondWith(fetch(e.request).then((r) => {
+    e.respondWith(fetch(e.request, { cache: 'no-cache' }).then((r) => {
       const copie = r.clone(); caches.open(CACHE_NAME).then((c) => c.put('./index.html', copie)); return r;
     }).catch(() => caches.match('./index.html')));
     return;

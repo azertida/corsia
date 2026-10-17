@@ -41,6 +41,7 @@ On partage sa présence, pas sa vie :
 | Le téléphone | code du cercle, surnom, animal, habitudes, jetons de ses inscriptions | jusqu'à ce qu'on les efface |
 | Le serveur | liste des cours et des interruptions ; pour chaque séance à venir : surnom, animal, réaction | inscriptions et interruptions effacées une fois passées ; séances uniques aussi |
 
+- Une même personne (même surnom, même animal) n'apparaît qu'**une fois par séance** : en cas de réinstallation ou de deuxième appareil, la nouvelle inscription remplace l'ancienne.
 - Chaque inscription porte un **jeton** que seul le téléphone qui l'a créée connaît. Le serveur n'en garde qu'une empreinte et ne relie pas les inscriptions entre elles d'une semaine à l'autre.
 - Le script du serveur n'enregistre ni adresse IP ni autre trace. L'hébergeur tient, comme tout hébergeur, ses propres journaux techniques.
 - Il n'y a ni statistiques, ni cookies, ni traceurs. Les polices sont hébergées avec l'appli : aucun appel à Google ni à un autre service.

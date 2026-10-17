@@ -157,7 +157,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.3';
+  const VERSION = '3.4';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -999,7 +999,7 @@
     await rafraichir();
   }
 
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
   // Android : demander au navigateur de ne pas effacer les données de Corsia en cas de manque de place.
   if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then((ok) => ok || navigator.storage.persist()).catch(() => {});
 
