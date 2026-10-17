@@ -6,10 +6,19 @@
 <meta name="theme-color" content="#FBF5EA">
 <meta name="referrer" content="no-referrer">
 <title>Corsia</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icones/favicon-32.png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Corsia">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
+  /* Polices hébergées avec l'appli : aucun appel à Google ni à un autre service */
+  @font-face { font-family: 'Fraunces'; font-weight: 600; font-display: swap; src: url('polices/fraunces-latin-600-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Fraunces'; font-weight: 700; font-display: swap; src: url('polices/fraunces-latin-700-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 400; font-display: swap; src: url('polices/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 700; font-display: swap; src: url('polices/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2'); }
   :root {
     --creme: #FBF5EA; --carte: #FFFDF8; --bord: #E8DCC4; --bord-fort: #D9CBB0;
     --encre: #2B2118; --doux: #5E5040; --ocre: #8F5A1B; --bleu: #1F4E6B; --bleu-pale: #E3EEF4;
@@ -124,6 +133,15 @@
              background: var(--encre); color: #fff; padding: 12px 18px; border-radius: 14px; max-width: 90vw; font-size: 16px; z-index: 10; }
   .vide { text-align: center; padding: 30px 10px; color: var(--doux); }
   .pied { margin-top: 28px; font-size: 14px; color: var(--doux); text-align: center; }
+  .etapes { margin: 0; padding: 0; list-style: none; counter-reset: etape; display: flex; flex-direction: column; gap: 12px; }
+  .etapes li { counter-increment: etape; display: flex; gap: 12px; align-items: flex-start; }
+  .etapes li::before { content: counter(etape); flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--bleu); color: #fff;
+                       font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .geste { display: inline-flex; vertical-align: -5px; color: var(--bleu); }
+  .qr { align-self: center; background: #fff; padding: 12px; border-radius: 16px; border: 1px solid var(--bord); line-height: 0; }
+  .liens-bas { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; }
+  .texte h3 { margin-top: 6px; }
+  .texte ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -131,13 +149,14 @@
 <main id="app" aria-live="polite"></main>
 <div id="message" class="message" role="status" hidden></div>
 
+<script src="qrcode.js"></script>
 <script>
 (() => {
   'use strict';
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '2.5';
+  const VERSION = '3.0';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -304,6 +323,50 @@
     if (await appliquerHabitudes()) donnees = await api('semaine', null, params);
   }
 
+  /* ---------- Lien personnel : cercle, surnom, animal et habitudes (jamais la clé de gestion) ---------- */
+  const b64 = { code: (o) => btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+                lire: (t) => { try { const b = atob(t.replace(/-/g, '+').replace(/_/g, '/')); return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, (c) => c.charCodeAt(0)))); } catch { return null; } } };
+  const adresseAppli = () => `${location.origin}${location.pathname}`;
+  function lienPersonnel() {
+    return `${adresseAppli()}#moi=${b64.code({ v: 1, c: cercle.c, n: cercle.nom || '', s: profil?.surnom || '', a: profil?.animal || '', h: habitudes })}`;
+  }
+  function lireLien(texte) {
+    const moi = String(texte).match(/#moi=([A-Za-z0-9_-]+)/);
+    if (moi) { const o = b64.lire(moi[1]); if (o && /^[0-9a-f]{18}$/.test(o.c)) return { type: 'moi', ...o }; }
+    const c = String(texte).match(/[#&]c=([0-9a-f]{18})/);
+    if (c) return { type: 'invitation', c: c[1] };
+    return null;
+  }
+  // Renvoie true si quelque chose a changé.
+  function appliquerLien(l) {
+    if (!l) return false;
+    if (cercle && cercle.c !== l.c && !confirm(`Rejoindre ce cercle à la place du tien${NB}?`)) return false;
+    if (!cercle || cercle.c !== l.c) {
+      cercle = { c: l.c, nom: l.n || '' };
+      habitudes = []; miennes = {}; absences = {};
+      ecrire('miennes', miennes); ecrire('absences', absences);
+    }
+    if (l.type === 'moi' && !profil && l.s && FOND[l.a]) {
+      profil = { surnom: String(l.s).slice(0, 20), animal: l.a };
+      ecrire('profil', profil);
+      habitudes = Array.isArray(l.h) ? l.h.filter((h) => /^[0-9a-f]{12}$/.test(h)) : [];
+    }
+    ecrire('cercle', cercle); ecrire('habitudes', habitudes);
+    return true;
+  }
+  const estInstallee = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const surIphone = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let invitationAndroid = null;
+  addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); invitationAndroid = e; });
+
+  function qrSvg(texte) {
+    const q = qrcode(0, 'M'); q.addData(texte); q.make();
+    const n = q.getModuleCount(); let d = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c},${r}h1v1h-1z`;
+    return `<svg viewBox="-4 -4 ${n + 8} ${n + 8}" width="232" height="232" role="img" aria-label="QR code de l’invitation" shape-rendering="crispEdges">
+      <rect x="-4" y="-4" width="${n + 8}" height="${n + 8}" fill="#fff"/><path d="${d}" fill="#1B3A52"/></svg>`;
+  }
+
   /* Texte affiché dans les cadres de date et d'heure */
   function majBoites() {
     document.querySelectorAll('.boite input').forEach((i) => {
@@ -328,6 +391,8 @@
     if (ecran === 'cours') return ecranCours();
     if (ecran === 'inviter') return ecranInviter();
     if (ecran === 'gerer') return ecranGerer();
+    if (ecran === 'installer') return ecranInstaller();
+    if (ecran === 'donnees') return ecranDonnees();
     return ecranSemaine();
   }
 
@@ -339,6 +404,11 @@
           <p>Pour rejoindre un cercle, ouvre le <strong>lien d’invitation</strong> qu’on t’a envoyé, ou scanne son QR code.</p>
         </div>
         <div class="carte">
+          <p>${estInstallee() ? `Tu viens d’installer Corsia${NB}? Colle ici ton <strong>lien personnel</strong>, copié avant l’installation.` : `Tu as un <strong>lien personnel</strong> ou d’invitation${NB}? Colle-le ici.`}</p>
+          <label class="champ">Lien <input type="text" id="lienColle" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…"></label>
+          <button class="btn" id="utiliserLien">Utiliser ce lien</button>
+        </div>
+        <div class="carte">
           <p>Tu veux lancer un nouveau cercle pour ton cours${NB}?</p>
           <label class="champ">Nom du cercle
             <input type="text" id="nomCercle" maxlength="40" placeholder="Cours en piscine" autocomplete="off">
@@ -346,6 +416,13 @@
           <button class="btn plein" id="creer">Créer le cercle</button>
         </div>
       </div>`;
+    document.getElementById('utiliserLien').onclick = async () => {
+      const l = lireLien(document.getElementById('lienColle').value);
+      if (!l) return dire('Ce lien n’est pas un lien Corsia.');
+      appliquerLien(l); ecran = 'semaine';
+      dire(l.type === 'moi' && profil ? 'Te revoilà 🙂' : 'Bienvenue dans le cercle');
+      await rafraichir();
+    };
     document.getElementById('creer').onclick = async (e) => {
       e.target.disabled = true;
       try {
@@ -397,6 +474,16 @@
           <input type="text" id="surnom" maxlength="20" value="${esc(choix.surnom)}" autocomplete="nickname" placeholder="Prénom ou petit nom">
         </label>
         <button class="btn plein" id="enregistrer">C’est moi</button>
+        ${premier ? '' : `
+        <div class="encadre">
+          <h3>Mon lien de secours</h3>
+          <p>Il contient ton cercle, ton animal, ton surnom et tes habitudes. Si ton téléphone oublie tout, ou sur un nouvel appareil, ouvre-le et tout revient.</p>
+          <p class="doux">C’est ton lien à toi${NB}: garde-le pour toi (dans tes notes, ou envoyé à toi-même).</p>
+          <div class="rangee">
+            ${navigator.share ? '<button class="btn" id="partagerSecours">Partager</button>' : ''}
+            <button class="btn" id="copierSecours">Copier</button>
+          </div>
+        </div>`}
         <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara créé avec ChatGPT</p>
       </div>`;
     $app.querySelectorAll('.animal').forEach((b) => b.onclick = () => {
@@ -404,6 +491,9 @@
       $app.querySelectorAll('.animal').forEach((x) => x.setAttribute('aria-pressed', x === b));
     });
     const r = document.getElementById('retour'); if (r) r.onclick = () => { ecran = 'semaine'; afficher(); };
+    const cs = document.getElementById('copierSecours'); if (cs) cs.onclick = () => copier(lienPersonnel(), 'Lien de secours copié');
+    const ps = document.getElementById('partagerSecours');
+    if (ps) ps.onclick = () => navigator.share({ title: 'Mon lien Corsia', url: lienPersonnel() }).catch(() => {});
     document.getElementById('enregistrer').onclick = async (e) => {
       choix.surnom = document.getElementById('surnom').value.trim();
       if (!choix.animal) return dire('Choisis d’abord un animal 🙂');
@@ -521,6 +611,10 @@
           <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M12 3v7m-3-3 3 3 3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Je sors de l’eau un moment</button>
         <p class="doux" style="text-align:center;margin-top:-6px">Une pause, sans que personne ne le remarque.</p>` : ''}
+        <div class="liens-bas">
+          ${estInstallee() ? '' : '<button class="lien" id="installer">Installer Corsia</button>'}
+          <button class="lien" id="donnees">Ce que Corsia garde</button>
+        </div>
       </div>`;
 
     $app.querySelectorAll('[data-filtre]').forEach((b) => b.onclick = () => { ecrire('filtre', b.dataset.filtre); afficher(); });
@@ -549,6 +643,8 @@
       await api('modifier', { id: m.id, jeton: m.jeton, reaction: liste.join(',') });
     }));
     document.getElementById('moi').onclick = () => { ecran = 'profil'; afficher(); };
+    const bi = document.getElementById('installer'); if (bi) bi.onclick = () => { ecran = 'installer'; afficher(); };
+    document.getElementById('donnees').onclick = () => { ecran = 'donnees'; afficher(); };
     document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
     document.getElementById('inviter').onclick = () => { ecran = 'inviter'; afficher(); };
     const vp = document.getElementById('voirProps'); if (vp) vp.onclick = () => { ecran = 'cours'; afficher(); };
@@ -749,6 +845,8 @@
       <div class="pile">
         <h2 class="titre-ecran">Inviter quelqu’un</h2>
         <p>Envoie ce lien à une personne de ton cours. En l’ouvrant, elle rejoint ton cercle${NB}: elle choisit son animal, et c’est tout.</p>
+        <div class="qr">${qrSvg(lien)}</div>
+        <p class="doux" style="text-align:center">Sur place${NB}: fais scanner ce code avec l’appareil photo du téléphone.</p>
         <div class="cle">${esc(lien)}</div>
         <div class="rangee">
           ${navigator.share ? '<button class="btn plein" id="partager">Partager</button>' : ''}
@@ -760,6 +858,83 @@
     document.getElementById('copier').onclick = () => copier(lien, 'Lien copié');
     const p = document.getElementById('partager');
     if (p) p.onclick = () => navigator.share({ title: 'Corsia', text: `Rejoins le cercle «${NB}${cercle.nom || 'Corsia'}${NB}» pour voir qui vient au cours`, url: lien }).catch(() => {});
+  }
+
+  function ecranInstaller() {
+    ecrire('installVu', true);
+    // Sur iPhone, l'icône s'ouvrira sur l'adresse affichée : on y glisse le lien personnel,
+    // pour que l'appli installée retrouve tout.
+    if (surIphone()) history.replaceState(null, '', lienPersonnel().replace(location.origin, ''));
+    const partage = '<span class="geste"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+    const etapes = surIphone() ? `
+        <li><span><strong>Par précaution</strong>, copie ton lien de secours${NB}: <button class="lien" id="copierSecours" style="min-height:auto;padding:0">Copier</button></span></li>
+        <li><span>Touche le bouton <strong>Partager</strong> ${partage} de Safari, en bas de l’écran.</span></li>
+        <li><span>Fais défiler et choisis <strong>«${NB}Sur l’écran d’accueil${NB}»</strong>, puis <strong>Ajouter</strong>.</span></li>
+        <li><span>Ouvre Corsia depuis sa nouvelle icône. Si elle te demande un lien, colle ton lien de secours.</span></li>`
+      : `
+        <li><span>${invitationAndroid ? 'Touche le bouton ci-dessous.' : `Ouvre le menu <strong>⋮</strong> du navigateur, puis <strong>«${NB}Ajouter à l’écran d’accueil${NB}»</strong> ou <strong>«${NB}Installer l’application${NB}»</strong>.`}</span></li>
+        <li><span>Corsia apparaît avec son icône, comme une vraie appli. Tes réglages sont gardés.</span></li>`;
+    $app.innerHTML = `
+      <div class="retour"><button id="retour">‹ Ma semaine</button></div>
+      <div class="pile">
+        <h2 class="titre-ecran">Installer Corsia</h2>
+        <p>Avec Corsia sur ton écran d’accueil, tu l’ouvres d’un geste, comme une appli, et ton téléphone ne risque plus de l’oublier.</p>
+        <div class="carte"><ol class="etapes">${etapes}</ol></div>
+        ${!surIphone() && invitationAndroid ? '<button class="btn plein" id="installerAndroid">Installer</button>' : ''}
+        <button class="btn discret" id="plusTard">Plus tard</button>
+        <p class="doux">Tu retrouveras ces explications en bas de ta semaine, dans «${NB}Installer Corsia${NB}».</p>
+      </div>`;
+    const quitter = () => { history.replaceState(null, '', location.pathname); ecran = 'semaine'; afficher(); };
+    document.getElementById('retour').onclick = quitter;
+    document.getElementById('plusTard').onclick = quitter;
+    const cs = document.getElementById('copierSecours'); if (cs) cs.onclick = () => copier(lienPersonnel(), 'Lien de secours copié');
+    const ia = document.getElementById('installerAndroid');
+    if (ia) ia.onclick = async () => { invitationAndroid.prompt(); await invitationAndroid.userChoice.catch(() => {}); invitationAndroid = null; quitter(); };
+  }
+
+  function ecranDonnees() {
+    $app.innerHTML = `
+      <div class="retour"><button id="retour">‹ Ma semaine</button></div>
+      <div class="pile texte">
+        <h2 class="titre-ecran">Ce que Corsia garde</h2>
+        <p>Corsia sert à une seule chose${NB}: savoir qui vient au cours. Elle garde donc le moins possible, et le moins longtemps possible.</p>
+        <h3>Sur ton téléphone</h3>
+        <ul>
+          <li>le code de ton cercle, ton animal et ton surnom${NB};</li>
+          <li>les cours que tu as cochés comme habitudes${NB};</li>
+          <li>de quoi modifier ou retirer tes propres inscriptions.</li>
+        </ul>
+        <h3>Sur le serveur</h3>
+        <ul>
+          <li>la liste des cours du cercle et leurs interruptions${NB};</li>
+          <li>pour chaque séance à venir${NB}: le surnom, l’animal et la réaction de celles et ceux qui viennent.</li>
+        </ul>
+        <p>Une inscription <strong>s’efface toute seule après la séance</strong>. Il n’y a pas d’historique${NB}: personne ne peut savoir qui est venu la semaine passée.</p>
+        <p>Le serveur est hébergé en France, chez alwaysdata.</p>
+        <h3>Ce que Corsia ne garde jamais</h3>
+        <ul>
+          <li>ni nom, ni numéro de téléphone, ni adresse e-mail, ni photo${NB};</li>
+          <li>ni statistiques, ni cookies, ni traceurs${NB};</li>
+          <li>ni adresse IP${NB}: le programme de Corsia ne l’enregistre pas. L’hébergeur, comme tout hébergeur, tient ses propres journaux techniques.</li>
+        </ul>
+        <p>L’appli ne contacte aucun autre service${NB}: ni Google, ni réseau social.</p>
+        <h3>Une question${NB}?</h3>
+        <p>Demande à la personne qui gère ton cercle.</p>
+        <div class="encadre">
+          <h3>Tout effacer de ce téléphone</h3>
+          <p>Retire tes inscriptions à venir et efface tout ce que Corsia garde sur ce téléphone. Pour revenir, il te faudra un lien d’invitation ou ton lien de secours.</p>
+          <button class="btn discret" id="toutEffacer">Tout effacer de ce téléphone</button>
+        </div>
+        <p class="pied">Corsia · version ${VERSION}</p>
+      </div>`;
+    document.getElementById('retour').onclick = () => { ecran = 'semaine'; afficher(); };
+    document.getElementById('toutEffacer').onclick = async (e) => {
+      if (!confirm(`Tout effacer de ce téléphone${NB}? Tes inscriptions à venir seront retirées.`)) return;
+      e.target.disabled = true;
+      for (const k of Object.keys(miennes)) { try { await retirer(k); } catch {} }
+      try { Object.keys(localStorage).filter((k) => k.startsWith(P)).forEach((k) => localStorage.removeItem(k)); } catch {}
+      location.replace(location.pathname);
+    };
   }
 
   /* ================= Actions ================= */
@@ -795,21 +970,21 @@
 
   /* ================= Démarrage ================= */
   async function demarrer() {
-    const m = location.hash.match(/[#&]c=([0-9a-f]{18})/);
-    if (m) {
+    const l = lireLien(location.hash);
+    if (l) {
       history.replaceState(null, '', location.pathname);
-      if (!cercle || cercle.c !== m[1]) {
-        if (!cercle || confirm('Rejoindre ce nouveau cercle à la place du tien' + NB + '?')) {
-          cercle = { c: m[1], nom: '' };
-          ecrire('cercle', cercle);
-          habitudes = []; miennes = {}; absences = {};
-          ecrire('habitudes', habitudes); ecrire('miennes', miennes); ecrire('absences', absences);
-        }
-      }
+      if (!(cercle && cercle.c === l.c && profil)) appliquerLien(l);
+    }
+    // Écran d'installation proposé une fois, à la deuxième ouverture.
+    if (cercle) {
+      const n = lire('ouvertures', 0) + 1; ecrire('ouvertures', n);
+      if (n >= 2 && profil && !estInstallee() && !lire('installVu', false)) ecran = 'installer';
     }
     $app.innerHTML = '<div class="vide">Un instant…</div>';
     await rafraichir();
   }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && cercle && profil && ecran === 'semaine') rafraichir();
