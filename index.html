@@ -156,7 +156,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.0';
+  const VERSION = '3.1';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -328,7 +328,7 @@
                 lire: (t) => { try { const b = atob(t.replace(/-/g, '+').replace(/_/g, '/')); return JSON.parse(new TextDecoder().decode(Uint8Array.from(b, (c) => c.charCodeAt(0)))); } catch { return null; } } };
   const adresseAppli = () => `${location.origin}${location.pathname}`;
   function lienPersonnel() {
-    return `${adresseAppli()}#moi=${b64.code({ v: 1, c: cercle.c, n: cercle.nom || '', s: profil?.surnom || '', a: profil?.animal || '', h: habitudes })}`;
+    return `${adresseAppli()}#moi=${b64.code({ v: 1, c: cercle.c, n: cercle.nom || '', s: profil?.surnom || '', a: profil?.animal || '', h: habitudes, ...(cercle.admin ? { g: 1 } : {}) })}`;
   }
   function lireLien(texte) {
     const moi = String(texte).match(/#moi=([A-Za-z0-9_-]+)/);
@@ -350,6 +350,7 @@
       profil = { surnom: String(l.s).slice(0, 20), animal: l.a };
       ecrire('profil', profil);
       habitudes = Array.isArray(l.h) ? l.h.filter((h) => /^[0-9a-f]{12}$/.test(h)) : [];
+      if (l.g && !cercle.admin) ecrire('rappelCle', true);   // rappeler de recoller la clé de gestion
     }
     ecrire('cercle', cercle); ecrire('habitudes', habitudes);
     return true;
@@ -596,6 +597,9 @@
           <p class="doux">Corsia ne t’inscrit plus automatiquement. Tes habitudes sont gardées.</p>
           <button class="btn plein" id="replonger">Je replonge</button></div>` : ''}
         ${props}
+        ${lire('rappelCle', false) && !cercle.admin ? `<div class="encadre"><strong>Tu gères ce cercle</strong>
+          <p>Sur cet appareil, colle ta clé de gestion (rangée dans ton gestionnaire de mots de passe) pour retrouver l’ajout et l’interruption des cours.</p>
+          <div class="rangee"><button class="btn plein" id="collerCle">Coller ma clé</button><button class="btn discret" id="pasMaintenant">Pas maintenant</button></div></div>` : ''}
         <h2>Cette semaine</h2>
         <div class="bascule" role="group" aria-label="Cours affichés">
           <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
@@ -645,6 +649,8 @@
     document.getElementById('moi').onclick = () => { ecran = 'profil'; afficher(); };
     const bi = document.getElementById('installer'); if (bi) bi.onclick = () => { ecran = 'installer'; afficher(); };
     document.getElementById('donnees').onclick = () => { ecran = 'donnees'; afficher(); };
+    const cc = document.getElementById('collerCle'); if (cc) cc.onclick = () => { ecran = 'gerer'; afficher(); };
+    const pm = document.getElementById('pasMaintenant'); if (pm) pm.onclick = () => { oublier('rappelCle'); afficher(); };
     document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
     document.getElementById('inviter').onclick = () => { ecran = 'inviter'; afficher(); };
     const vp = document.getElementById('voirProps'); if (vp) vp.onclick = () => { ecran = 'cours'; afficher(); };
@@ -833,7 +839,7 @@
       agir(e.target, async () => {
         const r = await api('semaine', null, { admin: k });
         if (!r.admin) throw new Error('Cette clé ne correspond pas à ce cercle.');
-        cercle.admin = k; ecrire('cercle', cercle); ecran = 'cours';
+        cercle.admin = k; ecrire('cercle', cercle); oublier('rappelCle'); ecran = 'cours';
       }, 'C’est bon, tu gères ce cercle');
     };
   }
@@ -860,31 +866,39 @@
     if (p) p.onclick = () => navigator.share({ title: 'Corsia', text: `Rejoins le cercle «${NB}${cercle.nom || 'Corsia'}${NB}» pour voir qui vient au cours`, url: lien }).catch(() => {});
   }
 
+  let systeme = null;   // 'iphone' ou 'android', choisi automatiquement puis modifiable
   function ecranInstaller() {
     ecrire('installVu', true);
+    if (!systeme) systeme = surIphone() ? 'iphone' : 'android';
     // Sur iPhone, l'icône s'ouvrira sur l'adresse affichée : on y glisse le lien personnel,
     // pour que l'appli installée retrouve tout.
     if (surIphone()) history.replaceState(null, '', lienPersonnel().replace(location.origin, ''));
     const partage = '<span class="geste"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
-    const etapes = surIphone() ? `
+    const etapes = systeme === 'iphone' ? `
         <li><span><strong>Par précaution</strong>, copie ton lien de secours${NB}: <button class="lien" id="copierSecours" style="min-height:auto;padding:0">Copier</button></span></li>
         <li><span>Touche le bouton <strong>Partager</strong> ${partage} de Safari, en bas de l’écran.</span></li>
         <li><span>Fais défiler et choisis <strong>«${NB}Sur l’écran d’accueil${NB}»</strong>, puis <strong>Ajouter</strong>.</span></li>
         <li><span>Ouvre Corsia depuis sa nouvelle icône. Si elle te demande un lien, colle ton lien de secours.</span></li>`
       : `
-        <li><span>${invitationAndroid ? 'Touche le bouton ci-dessous.' : `Ouvre le menu <strong>⋮</strong> du navigateur, puis <strong>«${NB}Ajouter à l’écran d’accueil${NB}»</strong> ou <strong>«${NB}Installer l’application${NB}»</strong>.`}</span></li>
-        <li><span>Corsia apparaît avec son icône, comme une vraie appli. Tes réglages sont gardés.</span></li>`;
+        <li><span>${invitationAndroid ? 'Touche le bouton <strong>Installer</strong> ci-dessous.' : `Ouvre le menu <strong>⋮</strong> du navigateur (en haut à droite dans Chrome, en bas dans Samsung Internet), puis <strong>«${NB}Ajouter à l’écran d’accueil${NB}»</strong> ou <strong>«${NB}Installer l’application${NB}»</strong>.`}</span></li>
+        <li><span>Corsia apparaît avec son icône, comme une vraie appli. Tes réglages sont gardés.</span></li>
+        <li><span>Installe-la depuis <strong>le même navigateur</strong> que celui où tu as ouvert l’invitation. Sinon, colle ton lien de secours${NB}: <button class="lien" id="copierSecours" style="min-height:auto;padding:0">Copier</button></span></li>`;
     $app.innerHTML = `
       <div class="retour"><button id="retour">‹ Ma semaine</button></div>
       <div class="pile">
         <h2 class="titre-ecran">Installer Corsia</h2>
         <p>Avec Corsia sur ton écran d’accueil, tu l’ouvres d’un geste, comme une appli, et ton téléphone ne risque plus de l’oublier.</p>
+        <div class="bascule" role="group" aria-label="Type de téléphone">
+          <button data-systeme="iphone" aria-pressed="${systeme === 'iphone'}">iPhone</button>
+          <button data-systeme="android" aria-pressed="${systeme === 'android'}">Android</button>
+        </div>
         <div class="carte"><ol class="etapes">${etapes}</ol></div>
-        ${!surIphone() && invitationAndroid ? '<button class="btn plein" id="installerAndroid">Installer</button>' : ''}
+        ${systeme === 'android' && invitationAndroid ? '<button class="btn plein" id="installerAndroid">Installer</button>' : ''}
         <button class="btn discret" id="plusTard">Plus tard</button>
         <p class="doux">Tu retrouveras ces explications en bas de ta semaine, dans «${NB}Installer Corsia${NB}».</p>
       </div>`;
     const quitter = () => { history.replaceState(null, '', location.pathname); ecran = 'semaine'; afficher(); };
+    $app.querySelectorAll('[data-systeme]').forEach((b) => b.onclick = () => { systeme = b.dataset.systeme; afficher(); });
     document.getElementById('retour').onclick = quitter;
     document.getElementById('plusTard').onclick = quitter;
     const cs = document.getElementById('copierSecours'); if (cs) cs.onclick = () => copier(lienPersonnel(), 'Lien de secours copié');
@@ -985,6 +999,8 @@
   }
 
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  // Android : demander au navigateur de ne pas effacer les données de Corsia en cas de manque de place.
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persisted().then((ok) => ok || navigator.storage.persist()).catch(() => {});
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && cercle && profil && ecran === 'semaine') rafraichir();
