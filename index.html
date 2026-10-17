@@ -78,6 +78,9 @@
   .rangee { display: flex; gap: 10px; flex-wrap: wrap; }
   .rangee .btn { flex: 1 1 140px; }
   .btn.pause { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ocre); border-color: var(--bord-fort); margin-top: 10px; }
+  .choix { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 8px; }
+  .choix .btn { padding: 0 6px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .petit-lien { align-self: center; font-size: 15px; font-weight: 400; color: var(--doux); text-decoration: underline; text-underline-offset: 3px; }
   .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 44px; padding: 0 6px; display: inline-flex; align-items: center; gap: 8px; }
 
   .bascule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--sable); border-radius: 14px; padding: 4px; }
@@ -157,7 +160,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.7';
+  const VERSION = '3.8';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -390,7 +393,7 @@
     if (!cercle) return ecranAccueil();
     if (ecran === 'cle') return ecranCle();
     if (!profil || ecran === 'profil') return ecranProfil();
-    if (ecran === 'cours') return ecranCours();
+    if (ecran === 'cours') return cercle.admin ? ecranCours() : ecranSemaine();
     if (ecran === 'inviter') return ecranInviter();
     if (ecran === 'gerer') return ecranGerer();
     if (ecran === 'installer') return ecranInstaller();
@@ -491,6 +494,7 @@
             <button class="btn" id="copierSecours">Copier</button>
           </div>
         </div>`}
+        ${premier || cercle.admin ? '' : '<button class="lien petit-lien" id="gerer">Je gère ce cercle</button>'}
         <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara, raie manta et hippocampe créés avec ChatGPT</p>
       </div>`;
     $app.querySelectorAll('.animal').forEach((b) => b.onclick = () => {
@@ -499,6 +503,7 @@
     });
     const r = document.getElementById('retour'); if (r) r.onclick = () => { ecran = 'semaine'; afficher(); };
     const cs = document.getElementById('copierSecours'); if (cs) cs.onclick = () => copier(lienPersonnel(), 'Lien de secours copié');
+    const gp = document.getElementById('gerer'); if (gp) gp.onclick = () => { ecran = 'gerer'; afficher(); };
     const ps = document.getElementById('partagerSecours');
     if (ps) ps.onclick = () => navigator.share({ title: 'Mon lien Corsia', url: lienPersonnel() }).catch(() => {});
     let confirme = false;
@@ -524,7 +529,8 @@
           try { await api('modifier', { id: m.id, jeton: m.jeton, surnom: profil.surnom, animal: profil.animal }); } catch {}
         }
       }
-      ecran = premier ? 'cours' : 'semaine';
+      ecran = premier && cercle.admin ? 'cours' : 'semaine';
+      if (premier && !cercle.admin) ecrire('filtre', 'tous');
       await rafraichir();
     };
   }
@@ -571,19 +577,28 @@
         : noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
       const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
 
+      const chaque = c.rythme === 2 ? `Un ${JOURS[c.jour]} sur deux` : `Chaque ${JOURS[c.jour]}`;
+      const plusChaque = `<button class="lien petit-lien" data-oublier="${c.id}">Ne plus venir ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
       let action;
       if (moi) {
         const actuelles = (reactionDe.get(moi.id) || '').split(',');
-        action = `<div class="etat">✓ ${habituel ? `Tu y vas, comme chaque ${JOURS[c.jour]}` : 'Tu y vas'}</div>
+        action = `<div class="etat">✓ ${habituel ? `Tu y vas, ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `comme chaque ${JOURS[c.jour]}`}` : c.rythme === 0 ? 'Tu y vas' : 'Tu y vas, cette fois'}</div>
           <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)">
             ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
           </div>
-          <button class="btn discret" data-retirer="${s.cle}">Pas cette fois</button>`;
+          <button class="btn discret" data-retirer="${s.cle}">${habituel ? 'Pas cette fois' : 'Finalement, je ne viens pas'}</button>
+          ${habituel ? plusChaque : c.rythme !== 0 ? `<button class="lien petit-lien" data-adopter="${s.cle}">En faire une habitude${NB}: ${chaque.toLowerCase()}</button>` : ''}`;
       } else if (habituel && absences[s.cle]) {
         action = `<div class="doux">Pas cette fois</div>
-                  <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>`;
+                  <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>
+                  ${plusChaque}`;
+      } else if (habituel || c.rythme === 0) {
+        action = `<button class="btn" data-venir="${s.cle}">J’y vais</button>${habituel ? plusChaque : ''}`;
       } else {
-        action = `<button class="btn" data-venir="${s.cle}">${habituel ? 'J’y vais' : c.rythme === 0 ? 'J’y vais' : 'Je viens exceptionnellement'}</button>`;
+        action = `<div class="choix">
+            <button class="btn" data-venir="${s.cle}">Cette fois</button>
+            <button class="btn plein" data-adopter="${s.cle}">${chaque}</button>
+          </div>`;
       }
       return `
         <article class="carte${moi ? ' mienne' : ''}">
@@ -613,11 +628,13 @@
         ${pause ? `<div class="encadre"><strong>Tu es hors de l’eau pour un moment.</strong>
           <p class="doux">Corsia ne t’inscrit plus automatiquement. Tes habitudes sont gardées.</p>
           <button class="btn plein" id="replonger">Je replonge</button></div>` : ''}
-        ${props}
         ${lire('rappelCle', false) && !cercle.admin ? `<div class="encadre"><strong>Tu gères ce cercle</strong>
           <p>Sur cet appareil, colle ta clé de gestion (rangée dans ton gestionnaire de mots de passe) pour retrouver l’ajout et l’interruption des cours.</p>
           <div class="rangee"><button class="btn plein" id="collerCle">Coller ma clé</button><button class="btn discret" id="pasMaintenant">Pas maintenant</button></div></div>` : ''}
         <h2>Cette semaine</h2>
+        ${!habitudes.length && donnees?.cours?.length && !Object.keys(miennes).length ? `<div class="encadre">
+          <strong>Choisis tes cours</strong>
+          <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia t’y inscrira toutes les semaines. Pour une seule séance, touche «${NB}Cette fois${NB}».</p></div>` : ''}
         <div class="bascule" role="group" aria-label="Cours affichés">
           <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
           <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
@@ -625,7 +642,7 @@
         ${corps}
         ${filtre === 'miens' && cachees ? `<p class="doux" style="text-align:center">${cachees} autre${cachees > 1 ? 's' : ''} séance${cachees > 1 ? 's' : ''} dans «${NB}Tous les cours${NB}»</p>` : ''}
         <div class="rangee">
-          <button class="btn discret" id="mesCours">Les cours</button>
+          ${cercle.admin ? '<button class="btn discret" id="mesCours">Les cours</button>' : ''}
           <button class="btn discret" id="inviter">Inviter</button>
         </div>
         ${!pause ? `<button class="btn discret pause" id="pause">
@@ -644,6 +661,21 @@
       delete absences[s.cle]; ecrire('absences', absences);
       await inscrire(s, habitudes.includes(s.cours.id) ? 'habitude' : 'ponctuel');
     }));
+    $app.querySelectorAll('[data-adopter]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const s = toutes.find((x) => x.cle === b.dataset.adopter);
+      if (!habitudes.includes(s.cours.id)) habitudes.push(s.cours.id);
+      ecrire('habitudes', habitudes);
+      delete absences[s.cle]; ecrire('absences', absences);
+      if (miennes[s.cle]) { miennes[s.cle].source = 'habitude'; ecrire('miennes', miennes); }
+      else await inscrire(s, 'habitude');
+    }, `C’est noté${NB}: ${b.textContent.replace(/^.*?:\s*/, '').toLowerCase()}`));
+    $app.querySelectorAll('[data-oublier]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const id = b.dataset.oublier;
+      habitudes = habitudes.filter((h) => h !== id); ecrire('habitudes', habitudes);
+      for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|') && m.source === 'habitude') await retirer(k);
+      for (const k of Object.keys(absences)) if (k.startsWith(id + '|')) delete absences[k];
+      ecrire('absences', absences);
+    }, 'Habitude retirée'));
     $app.querySelectorAll('[data-revenir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const s = toutes.find((x) => x.cle === b.dataset.revenir);
       delete absences[s.cle]; ecrire('absences', absences);
@@ -668,9 +700,8 @@
     document.getElementById('donnees').onclick = () => { ecran = 'donnees'; afficher(); };
     const cc = document.getElementById('collerCle'); if (cc) cc.onclick = () => { ecran = 'gerer'; afficher(); };
     const pm = document.getElementById('pasMaintenant'); if (pm) pm.onclick = () => { oublier('rappelCle'); afficher(); };
-    document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
+    const mc = document.getElementById('mesCours'); if (mc) mc.onclick = () => { ecran = 'cours'; afficher(); };
     document.getElementById('inviter').onclick = () => { ecran = 'inviter'; afficher(); };
-    const vp = document.getElementById('voirProps'); if (vp) vp.onclick = () => { ecran = 'cours'; afficher(); };
     const pz = document.getElementById('pause'); if (pz) pz.onclick = () => agir(pz, async () => {
       ecrire('pause', true);
       for (const [k, m] of Object.entries(miennes)) if (m.source === 'habitude') await retirer(k);
@@ -783,7 +814,7 @@
       <div class="retour"><button id="retour">‹ Ma semaine</button></div>
       <div class="pile">
         <h2 class="titre-ecran">Les cours</h2>
-        <p class="doux">Tous les cours du cercle. Coche ceux où tu vas d’habitude${NB}: Corsia t’y inscrira, et tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
+        <p class="doux">Le programme complet du club, que tu tiens à jour. Les membres ne voient pas cet écran${NB}: ils choisissent leurs cours directement dans leur semaine.</p>
         ${cours.length ? groupes(cours).map(([nom, liste]) => `
         <div class="carte">
           <h3>${esc(nom)}</h3>
@@ -791,8 +822,7 @@
             <div class="bloc-cours">
               ${c.rythme === 0
                 ? `<div class="detail" style="color:var(--encre);font-weight:700">${rythmeFr(c)}</div>`
-                : `<label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
-                    <span>${creneauFr(c)}</span></label>`}
+                : `<div style="font-weight:700">${creneauFr(c)}</div>`}
               <div class="detail">${prochaineFr(c)}</div>
               ${inter.filter((i) => i.cours === c.id).map(ligneCoupure).join('')}
               ${admin ? `<div class="outils">
@@ -811,30 +841,14 @@
             ${admin ? (ouvert === 'club' ? formulaireCoupure('club') : '<button class="btn discret" data-ouvrir="club">Ajouter une fermeture</button>') : ''}
           </div>` : ''}
 
-        ${admin && props.length ? `<h2>Propositions</h2><div class="carte">${props.map((c) => `
-            <div class="bloc-cours"><div><div class="titre">${esc(c.nom)}</div><div class="detail">${rythmeFr(c)}</div></div>
-              <div class="rangee"><button class="btn petit" data-accepter="${c.id}">Accepter</button>
-              <button class="btn discret petit" data-refuser="${c.id}">Refuser</button></div></div>`).join('')}</div>` : ''}
+        <h2>Ajouter un cours</h2>
+        ${formulaireCours(true)}
 
-        <h2>${admin ? 'Ajouter un cours' : 'Proposer un cours'}</h2>
-        ${formulaireCours(admin)}
-
-        ${admin
-          ? '<button class="lien" id="voirCle" style="align-self:center">Afficher ma clé de gestion</button>'
-          : '<button class="lien" id="gerer" style="align-self:center">Je gère ce cercle</button>'}
+        <button class="lien" id="voirCle" style="align-self:center">Afficher ma clé de gestion</button>
         <p class="pied">Corsia · version ${VERSION}</p>
       </div>`;
 
     document.getElementById('retour').onclick = async () => { ecran = 'semaine'; ouvert = null; await rafraichir(); };
-    $app.querySelectorAll('[data-habitude]').forEach((b) => b.onchange = () => agir(b, async () => {
-      const id = b.dataset.habitude;
-      if (b.checked) { if (!habitudes.includes(id)) habitudes.push(id); }
-      else {
-        habitudes = habitudes.filter((h) => h !== id);
-        for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|') && m.source === 'habitude') await retirer(k);
-      }
-      ecrire('habitudes', habitudes);
-    }, b.checked ? 'Noté, chaque fois' : 'Habitude retirée', false));
     $app.querySelectorAll('[data-ouvrir]').forEach((b) => b.onclick = () => { ouvert = b.dataset.ouvrir; afficher(); });
     const vc = document.getElementById('validerCoupure');
     if (vc) vc.onclick = () => {
@@ -856,14 +870,14 @@
       agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.accepter, accepte: true }), 'Cours ajouté'));
     $app.querySelectorAll('[data-refuser]').forEach((b) => b.onclick = () =>
       agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.refuser, accepte: false }), 'Proposition retirée'));
-    brancherFormulaireCours(admin);
+    brancherFormulaireCours(true);
     const vk = document.getElementById('voirCle'); if (vk) vk.onclick = () => { ecran = 'cle'; afficher(); };
     const ge = document.getElementById('gerer'); if (ge) ge.onclick = () => { ecran = 'gerer'; afficher(); };
   }
 
   function ecranGerer() {
     $app.innerHTML = `
-      <div class="retour"><button id="retour">‹ Les cours</button></div>
+      <div class="retour"><button id="retour">‹ Mon profil</button></div>
       <div class="pile">
         <h2 class="titre-ecran">Je gère ce cercle</h2>
         <p>Colle ici la <strong>clé de gestion</strong> que tu as reçue en créant le cercle. Tu la retrouves dans ton gestionnaire de mots de passe.</p>
@@ -871,7 +885,7 @@
           <input type="text" id="saisieCle" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"></label>
         <button class="btn plein" id="valider">Valider</button>
       </div>`;
-    document.getElementById('retour').onclick = () => { ecran = 'cours'; afficher(); };
+    document.getElementById('retour').onclick = () => { ecran = 'profil'; afficher(); };
     document.getElementById('valider').onclick = (e) => {
       const k = document.getElementById('saisieCle').value.trim().toLowerCase();
       if (!/^[0-9a-f]{32}$/.test(k)) return dire('Cette clé n’a pas le bon format.');

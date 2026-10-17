@@ -14,13 +14,14 @@ On partage sa présence, pas sa vie :
 ## Comment ça marche
 
 - **Un cercle** se rejoint par un lien d'invitation qui contient son code. Sans ce code, on ne voit rien.
-- **Les cours** : chacun coche les cours où il va d'habitude. À chaque ouverture, Corsia l'inscrit aux séances correspondantes des 7 prochains jours.
-- **Pas cette fois** : on se retire d'une séance sans toucher à ses habitudes.
-- **Je viens exceptionnellement** : on s'inscrit à une séance hors de ses habitudes.
+- **Tout se décide dans la semaine**, sur la carte de chaque séance :
+  - **Chaque jeudi** (ou « Un vendredi sur deux ») : on en fait une habitude ; à chaque ouverture, Corsia inscrit aux séances correspondantes des 7 prochains jours ;
+  - **Cette fois** : on vient à une seule séance, hors de ses habitudes ;
+  - **Pas cette fois** : on se retire d'une séance sans toucher à ses habitudes ;
+  - **Ne plus venir chaque jeudi** / **En faire une habitude** : on change d'avis dans un sens ou dans l'autre.
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
 - **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).
 - **Mes cours / Tous les cours** : l'écran de la semaine montre par défaut ses propres cours.
-- **Propositions** : tout le monde peut proposer un cours. La personne qui gère le cercle le valide.
 - **Inviter** : un lien à partager, ou un QR code à faire scanner sur place.
 - **Installer Corsia** : proposé une fois, à la deuxième ouverture, avec les gestes pour iPhone et Android ; toujours accessible en bas de la semaine.
 - **Lien de secours** (dans son profil) : contient le cercle, le surnom, l'animal et les habitudes — jamais la clé de gestion. Il restaure tout sur un appareil qui a oublié, et sert de pont vers l'appli installée sur iPhone (où Safari et l'appli installée ne partagent pas leurs données).
@@ -28,11 +29,13 @@ On partage sa présence, pas sa vie :
 
 ### Pour la personne qui gère le cercle
 
+- **Les cours** : l'écran où elle tient à jour le programme complet du club. Les membres ne le voient pas ; il apparaît dès que la clé de gestion est présente sur l'appareil.
+
 - **Rythme d'un cours** : chaque semaine, une semaine sur deux (à partir de la date de la prochaine séance : rien n'apparaît avant), ou séance unique (un cours spécial, qui disparaît après sa date).
 - **Interrompre un cours** : un jour ou une période (vacances d'un·e prof…). Les séances apparaissent barrées, « Pas de cours ».
 - **Fermetures du club** : un jour ou une période où tous les cours sont supprimés (« Club fermé »).
 - Dans les deux cas, les inscriptions déjà faites sur ces séances sont retirées ; les habitudes restent et reprennent d'elles-mêmes.
-- **Clé de gestion** : remise une seule fois à la création du cercle. Le serveur n'en garde qu'une empreinte : elle ne peut pas être retrouvée. Sur un autre appareil, « Les cours › Je gère ce cercle » permet de la saisir.
+- **Clé de gestion** : remise une seule fois à la création du cercle. Le serveur n'en garde qu'une empreinte : elle ne peut pas être retrouvée. Sur un autre appareil, « Mon profil › Je gère ce cercle » (tout en bas) permet de la saisir.
 
 ## Données
 
@@ -66,8 +69,8 @@ Ce dépôt contient une copie de `serveur/api.php` pour garder son historique. G
 | `creer_cercle` | libre pour le premier cercle, ensuite clé d'administration requise | crée un cercle |
 | `semaine` | membres | cours, interruptions et inscriptions des 14 prochains jours (avec la clé : propositions en plus) |
 | `inscrire`, `modifier`, `retirer` | membres (jeton) | gérer sa présence à une séance |
-| `proposer` | membres (ajout direct pour l'administration) | proposer un cours |
-| `valider`, `supprimer_cours` | administration | gérer les cours |
+| `proposer` | administration (ajout direct) — l'appli ne propose plus cette action aux membres | ajouter un cours |
+| `valider`, `supprimer_cours` | administration | gérer les cours (`valider` n'est plus utilisé par l'appli) |
 | `interrompre`, `annuler_interruption` | administration | interrompre un cours ou fermer le club, du … au … |
 
 ## Mise à jour
