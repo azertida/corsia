@@ -168,6 +168,10 @@ function base(): PDO {
     $db->prepare('DELETE FROM inscriptions WHERE date < ?')->execute([$auj]);
     $db->prepare('DELETE FROM interruptions WHERE au < ?')->execute([$auj]);
     $db->prepare('DELETE FROM cours WHERE rythme = 0 AND ref < ?')->execute([$auj]);
+    // Une même personne (même surnom, même animal) n'apparaît qu'une fois par séance : on garde la plus récente.
+    // Ça arrive quand quelqu'un réinstalle Corsia ou l'utilise sur deux appareils.
+    $db->exec('DELETE FROM inscriptions WHERE rowid NOT IN (
+                 SELECT MAX(rowid) FROM inscriptions GROUP BY cours, date, lower(surnom), animal)');
     return $db;
 }
 
@@ -324,6 +328,14 @@ try {
             $st = $db->prepare('SELECT COUNT(*) FROM inscriptions WHERE cours = ? AND date = ?');
             $st->execute([$c['id'], $date]);
             if ((int)$st->fetchColumn() >= MAX_INSCRITS_PAR_SEANCE) erreur('Séance complète dans Corsia');
+            // Déjà inscrite sous le même surnom et le même animal (autre appareil, réinstallation) ?
+            // La nouvelle inscription remplace l'ancienne, en gardant sa réaction.
+            $st = $db->prepare('SELECT id, reaction FROM inscriptions WHERE cours = ? AND date = ? AND lower(surnom) = lower(?) AND animal = ?');
+            $st->execute([$c['id'], $date, $surnom, $animal]);
+            foreach ($st->fetchAll() as $ancienne) {
+                if ($reaction === '') $reaction = $ancienne['reaction'];
+                $db->prepare('DELETE FROM inscriptions WHERE id = ?')->execute([$ancienne['id']]);
+            }
             $id = aleatoire(8);
             $jeton = aleatoire(16);
             $db->prepare('INSERT INTO inscriptions (id, cercle, cours, date, jeton_hash, surnom, animal, reaction)
