@@ -62,6 +62,7 @@
   .btn.danger { border-color: var(--rouge); color: var(--rouge); }
   .btn:disabled { opacity: 0.5; }
   .rangee { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn.pause { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ocre); border-color: var(--ocre); margin-top: 10px; }
   .rangee .btn { flex: 1 1 140px; }
   .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 46px; padding: 0 8px; display: inline-flex; align-items: center; gap: 8px; }
 
@@ -405,7 +406,10 @@
           <button class="btn discret" id="mesCours">Mes cours</button>
           <button class="btn discret" id="inviter">Inviter</button>
         </div>
-        ${!pause ? '<button class="lien" id="pause">Je sors de l’eau un moment</button>' : ''}
+        ${!pause ? `<button class="btn discret pause" id="pause">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M12 3v7m-3-3 3 3 3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Je sors de l’eau un moment</button>
+        <p class="doux" style="text-align:center;margin-top:-6px">Une pause, sans que personne ne le remarque.</p>` : ''}
       </div>`;
 
     $app.querySelectorAll('[data-venir]').forEach((b) => b.onclick = () => agir(b, async () => {
