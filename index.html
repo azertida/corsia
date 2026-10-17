@@ -78,9 +78,9 @@
   .rangee { display: flex; gap: 10px; flex-wrap: wrap; }
   .rangee .btn { flex: 1 1 140px; }
   .btn.pause { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ocre); border-color: var(--bord-fort); margin-top: 10px; }
+  .btn.secondaire { color: var(--ocre); border-color: var(--bord-fort); font-weight: 700; font-size: 15px; min-height: 44px; }
   .choix { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 8px; }
   .choix .btn { padding: 0 6px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .petit-lien { align-self: center; font-size: 15px; font-weight: 400; color: var(--doux); text-decoration: underline; text-underline-offset: 3px; }
   .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 44px; padding: 0 6px; display: inline-flex; align-items: center; gap: 8px; }
 
   .bascule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--sable); border-radius: 14px; padding: 4px; }
@@ -160,7 +160,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.8';
+  const VERSION = '3.9';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -494,7 +494,7 @@
             <button class="btn" id="copierSecours">Copier</button>
           </div>
         </div>`}
-        ${premier || cercle.admin ? '' : '<button class="lien petit-lien" id="gerer">Je gère ce cercle</button>'}
+        ${premier || cercle.admin ? '' : '<button class="btn discret petit secondaire" id="gerer">Je gère ce cercle</button>'}
         <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara, raie manta et hippocampe créés avec ChatGPT</p>
       </div>`;
     $app.querySelectorAll('.animal').forEach((b) => b.onclick = () => {
@@ -578,7 +578,7 @@
       const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
 
       const chaque = c.rythme === 2 ? `Un ${JOURS[c.jour]} sur deux` : `Chaque ${JOURS[c.jour]}`;
-      const plusChaque = `<button class="lien petit-lien" data-oublier="${c.id}">Ne plus venir ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
+      const plusChaque = `<button class="btn discret petit secondaire" data-oublier="${c.id}">Ne plus venir ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
       let action;
       if (moi) {
         const actuelles = (reactionDe.get(moi.id) || '').split(',');
@@ -587,7 +587,7 @@
             ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
           </div>
           <button class="btn discret" data-retirer="${s.cle}">${habituel ? 'Pas cette fois' : 'Finalement, je ne viens pas'}</button>
-          ${habituel ? plusChaque : c.rythme !== 0 ? `<button class="lien petit-lien" data-adopter="${s.cle}">En faire une habitude${NB}: ${chaque.toLowerCase()}</button>` : ''}`;
+          ${habituel ? plusChaque : c.rythme !== 0 ? `<button class="btn discret petit secondaire" data-adopter="${s.cle}">En faire une habitude${NB}: ${chaque.toLowerCase()}</button>` : ''}`;
       } else if (habituel && absences[s.cle]) {
         action = `<div class="doux">Pas cette fois</div>
                   <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>
@@ -672,10 +672,12 @@
     $app.querySelectorAll('[data-oublier]').forEach((b) => b.onclick = () => agir(b, async () => {
       const id = b.dataset.oublier;
       habitudes = habitudes.filter((h) => h !== id); ecrire('habitudes', habitudes);
-      for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|') && m.source === 'habitude') await retirer(k);
+      // Les séances déjà prévues restent : elles deviennent de simples venues « cette fois ».
+      for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|')) m.source = 'ponctuel';
+      ecrire('miennes', miennes);
       for (const k of Object.keys(absences)) if (k.startsWith(id + '|')) delete absences[k];
       ecrire('absences', absences);
-    }, 'Habitude retirée'));
+    }, `Habitude retirée${NB}: cette séance reste prévue si tu y étais inscrite`));
     $app.querySelectorAll('[data-revenir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const s = toutes.find((x) => x.cle === b.dataset.revenir);
       delete absences[s.cle]; ecrire('absences', absences);
