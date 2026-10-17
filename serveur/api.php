@@ -25,7 +25,7 @@ const ORIGINES_AUTORISEES = ['https://azertida.github.io'];
 const ANIMAUX = ['poulpe', 'capybara', 'loutre', 'tortue', 'meduse', 'dauphin',
                  'phoque', 'manchot', 'baleine', 'grenouille', 'poisson-globe', 'crabe',
                  'raie', 'hippocampe'];
-const REACTIONS = ['', 'hate', 'retard', 'peutetre'];
+const REACTIONS = ['hate', 'retard', 'peutetre'];   // « hate » et « retard » se cumulent ; « peutetre » reste seule
 const FENETRE_JOURS = 14;          // on accepte les inscriptions jusqu'à 14 jours à l'avance
 const HORIZON_JOURS = 400;         // une interruption ou une séance unique : au plus un an à l'avance
 const MAX_SURNOM = 20;
@@ -80,6 +80,14 @@ function texte($valeur, int $max): string {
     $t = preg_replace('/[\x00-\x1F\x7F]/u', '', $t);
     if (mb_strlen($t) > $max) $t = mb_substr($t, 0, $max);
     return $t;
+}
+
+/* Réaction(s) : texte vide, une réaction, ou « hate,retard ». Renvoie la forme normalisée. */
+function reaction_valide($r): string {
+    $liste = array_values(array_unique(array_filter(explode(',', (string)($r ?? '')), 'strlen')));
+    foreach ($liste as $x) if (!in_array($x, REACTIONS, true)) erreur('Réaction inconnue');
+    if (in_array('peutetre', $liste, true)) return 'peutetre';
+    return implode(',', array_values(array_intersect(REACTIONS, $liste)));
 }
 
 function aujourdhui(): string { return date('Y-m-d'); }
@@ -203,7 +211,7 @@ function a_lieu(array $c, string $date): bool {
     $r = (int)$c['rythme'];
     if ($r === 0) return $date === $c['ref'];
     if (jour_iso($date) !== (int)$c['jour']) return false;
-    if ($r === 2 && $c['ref']) return ecart_jours($c['ref'], $date) % 14 === 0;
+    if ($r === 2 && $c['ref']) return $date >= $c['ref'] && ecart_jours($c['ref'], $date) % 14 === 0;   // rien avant la première séance
     return true;
 }
 
@@ -312,8 +320,7 @@ try {
             if ($surnom === '') erreur('Surnom manquant');
             $animal = (string)($entree['animal'] ?? '');
             if (!in_array($animal, ANIMAUX, true)) erreur('Animal inconnu');
-            $reaction = (string)($entree['reaction'] ?? '');
-            if (!in_array($reaction, REACTIONS, true)) erreur('Réaction inconnue');
+            $reaction = reaction_valide($entree['reaction'] ?? '');
             $st = $db->prepare('SELECT COUNT(*) FROM inscriptions WHERE cours = ? AND date = ?');
             $st->execute([$c['id'], $date]);
             if ((int)$st->fetchColumn() >= MAX_INSCRITS_PAR_SEANCE) erreur('Séance complète dans Corsia');
@@ -331,8 +338,7 @@ try {
             $st->execute([(string)($entree['id'] ?? ''), $code]);
             $i = $st->fetch();
             if (!$i || !hash_equals($i['jeton_hash'], empreinte((string)($entree['jeton'] ?? '')))) erreur('Inscription introuvable', 404);
-            $reaction = array_key_exists('reaction', $entree) ? (string)$entree['reaction'] : $i['reaction'];
-            if (!in_array($reaction, REACTIONS, true)) erreur('Réaction inconnue');
+            $reaction = array_key_exists('reaction', $entree) ? reaction_valide($entree['reaction']) : $i['reaction'];
             $surnom = array_key_exists('surnom', $entree) ? texte($entree['surnom'], MAX_SURNOM) : $i['surnom'];
             if ($surnom === '') erreur('Surnom manquant');
             $animal = array_key_exists('animal', $entree) ? (string)$entree['animal'] : $i['animal'];
