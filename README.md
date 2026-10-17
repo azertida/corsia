@@ -18,7 +18,7 @@ On partage sa présence, pas sa vie :
   - pour entrer : **Cette fois** (une seule séance) ou **Chaque jeudi** (« Un vendredi sur deux ») ;
   - ensuite, trois réglages qui montrent chacun leur état :
     - **J'y vais | Pas cette fois** pour cette séance ;
-    - un interrupteur **Chaque jeudi** pour l'habitude : allumé, Corsia inscrit aux séances correspondantes des 7 prochains jours à chaque ouverture ; éteint, une séance déjà prévue le reste ;
+    - un interrupteur **Chaque jeudi** pour l'habitude : allumé, Corsia montre au cercle sa présence aux séances correspondantes des 7 prochains jours (Corsia ne réserve rien au club) ; éteint, une séance déjà prévue le reste ;
     - **Un petit mot ?** (les réactions), quand on y va.
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
 - **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).

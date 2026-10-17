@@ -170,7 +170,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.13';
+  const VERSION = '3.14';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -615,7 +615,7 @@
           </div>`;
         const habitude = c.rythme === 0 ? '' : `<button class="interrupteur" role="switch" aria-checked="${habituel}"
             ${habituel ? `data-oublier="${c.id}"` : `data-adopter="${s.cle}"`}>
-            <span>${chaque}<span class="detail">${habituel ? 'Corsia t’inscrit chaque fois' : 'Pour cette séance seulement'}</span></span>
+            <span>${chaque}<span class="detail">${habituel ? 'Le cercle te voit chaque semaine' : 'Pour cette séance seulement'}</span></span>
             <span class="piste" aria-hidden="true"></span></button>`;
         let mot = '';
         if (moi) {
@@ -660,7 +660,7 @@
       </div>
       <div class="pile">
         ${pause ? `<div class="encadre"><strong>Tu es hors de l’eau pour un moment.</strong>
-          <p class="doux">Corsia ne t’inscrit plus automatiquement. Tes habitudes sont gardées.</p>
+          <p class="doux">Le cercle ne te voit plus aux séances. Tes habitudes sont gardées.</p>
           <button class="btn plein" id="replonger">Je replonge</button></div>` : ''}
         ${lire('rappelCle', false) && !cercle.admin ? `<div class="encadre"><strong>Tu gères ce cercle</strong>
           <p>Sur cet appareil, colle ta clé de gestion (rangée dans ton gestionnaire de mots de passe) pour retrouver l’ajout et l’interruption des cours.</p>
@@ -668,7 +668,8 @@
         <h2>Cette semaine</h2>
         ${!habitudes.length && donnees?.cours?.length && !Object.keys(miennes).length ? `<div class="encadre">
           <strong>Choisis tes cours</strong>
-          <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia t’y inscrira toutes les semaines. Pour une seule séance, touche «${NB}Cette fois${NB}».</p></div>` : ''}
+          <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia te montrera au cercle chaque semaine. Pour une seule séance, touche «${NB}Cette fois${NB}».</p>
+          <p class="doux">Corsia ne réserve rien au club${NB}: elle montre seulement au cercle qui y va.</p></div>` : ''}
         <div class="bascule" role="group" aria-label="Cours affichés">
           <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
           <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
@@ -789,7 +790,7 @@
     return `<div class="formulaire">
         <label class="champ">Du <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="date" id="du" min="${auj}" value="${auj}"></span></label>
         <label class="champ">Au <span class="boite"><span class="valeur" aria-hidden="true"></span><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="date" id="au" min="${auj}" value="${auj}"></span></label>
-        <p class="doux">Un seul jour${NB}? Mets la même date deux fois. Les inscriptions déjà faites sur ces séances seront retirées.</p>
+        <p class="doux">Un seul jour${NB}? Mets la même date deux fois. Les présences déjà annoncées sur ces séances seront retirées.</p>
         <div class="rangee">
           <button class="btn plein petit" id="validerCoupure" data-cible="${cible}">${cible === 'club' ? 'Fermer' : 'Interrompre'}</button>
           <button class="btn discret petit" id="annulerCoupure">Annuler</button>
@@ -894,7 +895,7 @@
     $app.querySelectorAll('[data-annuler-coupure]').forEach((b) => b.onclick = () =>
       agir(b, () => api('annuler_interruption', { admin: cercle.admin, id: b.dataset.annulerCoupure }), 'Séances rétablies'));
     $app.querySelectorAll('[data-supprimer]').forEach((b) => b.onclick = () => {
-      if (!confirm(`Supprimer ce cours du cercle${NB}? Les inscriptions à venir disparaîtront aussi.`)) return;
+      if (!confirm(`Supprimer ce cours du cercle${NB}? Les présences annoncées disparaîtront aussi.`)) return;
       agir(b, () => api('supprimer_cours', { admin: cercle.admin, cours: b.dataset.supprimer }), 'Cours supprimé');
     });
     $app.querySelectorAll('[data-accepter]').forEach((b) => b.onclick = () =>
@@ -1007,7 +1008,7 @@
           <li>la liste des cours du cercle et leurs interruptions${NB};</li>
           <li>pour chaque séance à venir${NB}: le surnom, l’animal et la réaction de celles et ceux qui viennent.</li>
         </ul>
-        <p>Une inscription <strong>s’efface toute seule après la séance</strong>. Il n’y a pas d’historique${NB}: personne ne peut savoir qui est venu la semaine passée.</p>
+        <p>Ta présence à une séance <strong>s’efface toute seule après la séance</strong>. Il n’y a pas d’historique${NB}: personne ne peut savoir qui est venu la semaine passée.</p>
         <p>Le serveur est hébergé en France, chez alwaysdata.</p>
         <h3>Ce que Corsia ne garde jamais</h3>
         <ul>
@@ -1020,14 +1021,14 @@
         <p>Demande à la personne qui gère ton cercle.</p>
         <div class="encadre">
           <h3>Tout effacer de ce téléphone</h3>
-          <p>Retire tes inscriptions à venir et efface tout ce que Corsia garde sur ce téléphone. Pour revenir, il te faudra un lien d’invitation ou ton lien de secours.</p>
+          <p>Retire ta présence des séances à venir et efface tout ce que Corsia garde sur ce téléphone. Pour revenir, il te faudra un lien d’invitation ou ton lien de secours.</p>
           <button class="btn discret" id="toutEffacer">Tout effacer de ce téléphone</button>
         </div>
         <p class="pied">Corsia · version ${VERSION}</p>
       </div>`;
     document.getElementById('retour').onclick = () => { ecran = 'semaine'; afficher(); };
     document.getElementById('toutEffacer').onclick = async (e) => {
-      if (!confirm(`Tout effacer de ce téléphone${NB}? Tes inscriptions à venir seront retirées.`)) return;
+      if (!confirm(`Tout effacer de ce téléphone${NB}? Ta présence aux séances à venir sera retirée.`)) return;
       e.target.disabled = true;
       for (const k of Object.keys(miennes)) { try { await retirer(k); } catch {} }
       try { Object.keys(localStorage).filter((k) => k.startsWith(P)).forEach((k) => localStorage.removeItem(k)); } catch {}
