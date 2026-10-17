@@ -2,7 +2,7 @@
 
 *Corsia* : « le couloir de nage », en italien.
 
-Une petite appli pour savoir **qui vient au cours** (aquagym, apnée…) dans un cercle d'habitués, sans passer par un groupe de messagerie.
+Une petite appli pour savoir **qui vient au cours** (cours en piscine : aqua, apnée…) dans un cercle d'habitués, sans passer par un groupe de messagerie.
 
 On partage sa présence, pas sa vie :
 

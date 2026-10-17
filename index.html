@@ -264,7 +264,7 @@
         <div class="carte">
           <p>Tu veux lancer un nouveau cercle pour ton cours${NB}?</p>
           <label class="champ">Nom du cercle
-            <input type="text" id="nomCercle" maxlength="40" placeholder="Aqua du jeudi" autocomplete="off">
+            <input type="text" id="nomCercle" maxlength="40" placeholder="Cours en piscine" autocomplete="off">
           </label>
           <button class="btn plein" id="creer">Créer le cercle</button>
         </div>
@@ -463,7 +463,7 @@
               <button class="btn discret" data-refuser="${c.id}">Refuser</button></span></div>`).join('')}</div>` : ''}
         <h2>${admin ? 'Ajouter un cours' : 'Proposer un cours'}</h2>
         <div class="carte">
-          <label class="champ">Nom du cours <input type="text" id="nomCours" maxlength="30" placeholder="Aqua, Apnée…"></label>
+          <label class="champ">Nom du cours <input type="text" id="nomCours" maxlength="30" placeholder="Aquafit, Apnée…"></label>
           <div class="rangee">
             <label class="champ" style="flex:1 1 140px">Jour <select id="jourCours">${options}</select></label>
             <label class="champ" style="flex:1 1 120px">Heure <input type="time" id="heureCours" value="19:00"></label>
