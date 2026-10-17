@@ -1,6 +1,6 @@
 <?php
 /*
- * Corsia — petit serveur des inscriptions
+ * Corsia — petit serveur des inscriptions (version 2)
  *
  * Principes :
  *  - un « cercle » = un code secret partagé par lien ; sans code, on ne voit rien ;
@@ -10,8 +10,13 @@
  *    passées sont effacées automatiquement ;
  *  - aucune adresse IP ni autre trace n'est enregistrée par ce script.
  *
+ * Nouveautés de la version 2 :
+ *  - rythme des cours : chaque semaine, une semaine sur deux, séance unique ;
+ *  - interruptions d'un cours (jour ou période) et fermetures du club ;
+ *  - vérification d'une clé d'administration saisie sur un autre appareil.
+ *
  * Emplacement : www/corsia/api.php — les données vivent hors du site,
- * dans ~/corsia-data/corsia.sqlite (créé automatiquement).
+ * dans ~/corsia-data/corsia.sqlite (créé et mis à jour automatiquement).
  */
 
 date_default_timezone_set('Europe/Brussels');
@@ -22,10 +27,12 @@ const ANIMAUX = ['poulpe', 'capybara', 'loutre', 'tortue', 'meduse', 'dauphin',
                  'raie', 'hippocampe'];
 const REACTIONS = ['', 'hate', 'retard', 'peutetre'];
 const FENETRE_JOURS = 14;          // on accepte les inscriptions jusqu'à 14 jours à l'avance
+const HORIZON_JOURS = 400;         // une interruption ou une séance unique : au plus un an à l'avance
 const MAX_SURNOM = 20;
 const MAX_NOM_COURS = 30;
-const MAX_COURS_PAR_CERCLE = 30;
+const MAX_COURS_PAR_CERCLE = 40;
 const MAX_PROPOSITIONS = 10;
+const MAX_INTERRUPTIONS = 60;
 const MAX_INSCRITS_PAR_SEANCE = 60;
 
 /* ---------- En-têtes ---------- */
@@ -75,6 +82,30 @@ function texte($valeur, int $max): string {
     return $t;
 }
 
+function aujourdhui(): string { return date('Y-m-d'); }
+function dans(int $jours): string { return date('Y-m-d', strtotime("+$jours days")); }
+
+function verifier_date($d, string $quoi = 'Date'): string {
+    $d = (string)($d ?? '');
+    $o = DateTime::createFromFormat('!Y-m-d', $d);
+    if (!$o || $o->format('Y-m-d') !== $d) erreur("$quoi invalide");
+    return $d;
+}
+
+function jour_iso(string $date): int {
+    return (int)DateTime::createFromFormat('!Y-m-d', $date)->format('N');
+}
+
+function ecart_jours(string $a, string $b): int {
+    $da = DateTime::createFromFormat('!Y-m-d', $a);
+    $db = DateTime::createFromFormat('!Y-m-d', $b);
+    return (int)round(($db->getTimestamp() - $da->getTimestamp()) / 86400);
+}
+
+function colonnes(PDO $db, string $table): array {
+    return array_column($db->query("PRAGMA table_info($table)")->fetchAll(), 'name');
+}
+
 function base(): PDO {
     $dossier = dirname(__DIR__, 2) . '/corsia-data';
     if (!is_dir($dossier) && !mkdir($dossier, 0700, true)) {
@@ -111,9 +142,24 @@ function base(): PDO {
             reaction    TEXT NOT NULL DEFAULT \'\'
         );
         CREATE INDEX IF NOT EXISTS idx_insc ON inscriptions(cercle, date);
+        CREATE TABLE IF NOT EXISTS interruptions (
+            id      TEXT PRIMARY KEY,
+            cercle  TEXT NOT NULL REFERENCES cercles(code) ON DELETE CASCADE,
+            cours   TEXT REFERENCES cours(id) ON DELETE CASCADE,   -- vide = fermeture du club
+            du      TEXT NOT NULL,
+            au      TEXT NOT NULL
+        );
     ');
-    // Effacement automatique : tout ce qui concerne une séance passée disparaît.
-    $db->prepare('DELETE FROM inscriptions WHERE date < ?')->execute([date('Y-m-d')]);
+    // Mise à jour d'une base de la version 1 : rythme et date de référence des cours.
+    $cols = colonnes($db, 'cours');
+    if (!in_array('rythme', $cols, true)) $db->exec('ALTER TABLE cours ADD COLUMN rythme INTEGER NOT NULL DEFAULT 1'); // 1 = hebdo, 2 = une semaine sur deux, 0 = séance unique
+    if (!in_array('ref', $cols, true))    $db->exec('ALTER TABLE cours ADD COLUMN ref TEXT');                          // une date où le cours a lieu
+
+    // Effacement automatique de tout ce qui est passé.
+    $auj = aujourdhui();
+    $db->prepare('DELETE FROM inscriptions WHERE date < ?')->execute([$auj]);
+    $db->prepare('DELETE FROM interruptions WHERE au < ?')->execute([$auj]);
+    $db->prepare('DELETE FROM cours WHERE rythme = 0 AND ref < ?')->execute([$auj]);
     return $db;
 }
 
@@ -127,6 +173,10 @@ function cercle(PDO $db, string $code): array {
 
 function est_admin(array $cercle, $cle): bool {
     return is_string($cle) && $cle !== '' && hash_equals($cercle['admin_hash'], empreinte($cle));
+}
+
+function exiger_admin(array $cercle, array $entree): void {
+    if (!est_admin($cercle, $entree['admin'] ?? '')) erreur('Réservé à la personne qui gère le cercle', 403);
 }
 
 function cours_du_cercle(PDO $db, string $cercle, string $id): array {
@@ -148,6 +198,46 @@ function verifier_jour($j): int {
     return $j;
 }
 
+/* Le cours a-t-il lieu à cette date, d'après son rythme ? */
+function a_lieu(array $c, string $date): bool {
+    $r = (int)$c['rythme'];
+    if ($r === 0) return $date === $c['ref'];
+    if (jour_iso($date) !== (int)$c['jour']) return false;
+    if ($r === 2 && $c['ref']) return ecart_jours($c['ref'], $date) % 14 === 0;
+    return true;
+}
+
+/* La séance est-elle supprimée (interruption du cours ou fermeture du club) ? */
+function interrompu(PDO $db, string $cercle, string $cours, string $date): bool {
+    $st = $db->prepare('SELECT 1 FROM interruptions WHERE cercle = ? AND (cours IS NULL OR cours = ?) AND du <= ? AND au >= ? LIMIT 1');
+    $st->execute([$cercle, $cours, $date, $date]);
+    return (bool)$st->fetchColumn();
+}
+
+function cours_publics(PDO $db, string $code, string $statut): array {
+    $st = $db->prepare('SELECT id, nom, jour, heure, rythme, ref FROM cours WHERE cercle = ? AND statut = ? ORDER BY rythme = 0, jour, heure');
+    $st->execute([$code, $statut]);
+    return array_map(function ($c) { $c['jour'] = (int)$c['jour']; $c['rythme'] = (int)$c['rythme']; return $c; }, $st->fetchAll());
+}
+
+/* Lit nom, jour, heure, rythme et date de référence d'un cours envoyé par l'appli. */
+function lire_cours(array $e): array {
+    $nom = texte($e['nom'] ?? '', MAX_NOM_COURS);
+    if ($nom === '') erreur('Nom du cours manquant');
+    $heure = verifier_heure($e['heure'] ?? '');
+    $rythme = (int)($e['rythme'] ?? 1);
+    if (!in_array($rythme, [0, 1, 2], true)) erreur('Rythme inconnu');
+    $ref = null;
+    if ($rythme === 1) {
+        $jour = verifier_jour($e['jour'] ?? 0);
+    } else {
+        $ref = verifier_date($e['ref'] ?? '', 'Date du cours');
+        if ($rythme === 0 && ($ref < aujourdhui() || $ref > dans(HORIZON_JOURS))) erreur('Date hors de portée');
+        $jour = jour_iso($ref);
+    }
+    return [$nom, $jour, $heure, $rythme, $ref];
+}
+
 /* ---------- Lecture de la requête ---------- */
 
 $methode = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -166,9 +256,8 @@ try {
     $db = base();
 
     /* ----- Créer un cercle -----
-       Le tout premier cercle peut être créé librement (c'est le tien).
-       Ensuite, il faut la clé d'administration d'un cercle existant,
-       pour éviter que n'importe qui en crée. */
+       Le tout premier cercle peut être créé librement.
+       Ensuite, il faut la clé d'administration d'un cercle existant. */
     if ($action === 'creer_cercle' && $methode === 'POST') {
         $nb = (int)$db->query('SELECT COUNT(*) FROM cercles')->fetchColumn();
         if ($nb > 0) {
@@ -193,20 +282,20 @@ try {
 
     switch ($action) {
 
-        /* ----- Lire la semaine : cours et inscriptions à venir ----- */
+        /* ----- Lire : cours, interruptions et inscriptions à venir ----- */
         case 'semaine':
-            $st = $db->prepare('SELECT id, nom, jour, heure FROM cours WHERE cercle = ? AND statut = ? ORDER BY jour, heure');
-            $st->execute([$code, 'ok']);
-            $cours = $st->fetchAll();
-            $fin = date('Y-m-d', strtotime('+' . FENETRE_JOURS . ' days'));
+            $auj = aujourdhui();
             $st = $db->prepare('SELECT id, cours, date, surnom, animal, reaction FROM inscriptions
                                 WHERE cercle = ? AND date BETWEEN ? AND ? ORDER BY rowid');
-            $st->execute([$code, date('Y-m-d'), $fin]);
-            $rep = ['nom' => $cer['nom'], 'cours' => $cours, 'inscriptions' => $st->fetchAll()];
+            $st->execute([$code, $auj, dans(FENETRE_JOURS)]);
+            $inscriptions = $st->fetchAll();
+            $st = $db->prepare('SELECT id, cours, du, au FROM interruptions WHERE cercle = ? ORDER BY du');
+            $st->execute([$code]);
+            $rep = ['nom' => $cer['nom'], 'cours' => cours_publics($db, $code, 'ok'),
+                    'interruptions' => $st->fetchAll(), 'inscriptions' => $inscriptions];
             if (est_admin($cer, $_GET['admin'] ?? '')) {
-                $st = $db->prepare('SELECT id, nom, jour, heure FROM cours WHERE cercle = ? AND statut = ?');
-                $st->execute([$code, 'propose']);
-                $rep['propositions'] = $st->fetchAll();
+                $rep['admin'] = true;
+                $rep['propositions'] = cours_publics($db, $code, 'propose');
             }
             repondre($rep);
 
@@ -215,11 +304,10 @@ try {
             if ($methode !== 'POST') erreur('POST attendu', 405);
             $c = cours_du_cercle($db, $code, (string)($entree['cours'] ?? ''));
             if ($c['statut'] !== 'ok') erreur('Cours pas encore validé');
-            $date = (string)($entree['date'] ?? '');
-            $d = DateTime::createFromFormat('!Y-m-d', $date);
-            if (!$d || $d->format('Y-m-d') !== $date) erreur('Date invalide');
-            if ($date < date('Y-m-d') || $date > date('Y-m-d', strtotime('+' . FENETRE_JOURS . ' days'))) erreur('Date hors de la fenêtre');
-            if ((int)$d->format('N') !== (int)$c['jour']) erreur('Ce cours n\'a pas lieu ce jour-là');
+            $date = verifier_date($entree['date'] ?? '');
+            if ($date < aujourdhui() || $date > dans(FENETRE_JOURS)) erreur('Date hors de la fenêtre');
+            if (!a_lieu($c, $date)) erreur('Ce cours n\'a pas lieu ce jour-là');
+            if (interrompu($db, $code, $c['id'], $date)) erreur('Pas de cours ce jour-là');
             $surnom = texte($entree['surnom'] ?? '', MAX_SURNOM);
             if ($surnom === '') erreur('Surnom manquant');
             $animal = (string)($entree['animal'] ?? '');
@@ -259,19 +347,15 @@ try {
             $st = $db->prepare('SELECT jeton_hash FROM inscriptions WHERE id = ? AND cercle = ?');
             $st->execute([(string)($entree['id'] ?? ''), $code]);
             $h = $st->fetchColumn();
-            // Réponse identique si l'inscription n'existe plus : retirer deux fois n'est pas une erreur.
             if ($h && hash_equals($h, empreinte((string)($entree['jeton'] ?? '')))) {
                 $db->prepare('DELETE FROM inscriptions WHERE id = ?')->execute([(string)$entree['id']]);
             }
             repondre(['ok' => true]);
 
-        /* ----- Proposer un cours (tout le cercle) ou l'ajouter directement (admin) ----- */
+        /* ----- Proposer un cours (membres) ou l'ajouter directement (gestion) ----- */
         case 'proposer':
             if ($methode !== 'POST') erreur('POST attendu', 405);
-            $nom = texte($entree['nom'] ?? '', MAX_NOM_COURS);
-            if ($nom === '') erreur('Nom du cours manquant');
-            $jour = verifier_jour($entree['jour'] ?? 0);
-            $heure = verifier_heure($entree['heure'] ?? '');
+            [$nom, $jour, $heure, $rythme, $ref] = lire_cours($entree);
             $admin = est_admin($cer, $entree['admin'] ?? '');
             $st = $db->prepare('SELECT COUNT(*) FROM cours WHERE cercle = ? AND statut = ?');
             $st->execute([$code, 'ok']);
@@ -281,14 +365,14 @@ try {
                 if ((int)$st->fetchColumn() >= MAX_PROPOSITIONS) erreur('Déjà beaucoup de propositions en attente');
             }
             $id = aleatoire(6);
-            $db->prepare('INSERT INTO cours (id, cercle, nom, jour, heure, statut) VALUES (?, ?, ?, ?, ?, ?)')
-               ->execute([$id, $code, $nom, $jour, $heure, $admin ? 'ok' : 'propose']);
+            $db->prepare('INSERT INTO cours (id, cercle, nom, jour, heure, statut, rythme, ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+               ->execute([$id, $code, $nom, $jour, $heure, $admin ? 'ok' : 'propose', $rythme, $ref]);
             repondre(['id' => $id, 'statut' => $admin ? 'ok' : 'propose']);
 
-        /* ----- Valider ou refuser une proposition (admin) ----- */
+        /* ----- Valider ou refuser une proposition (gestion) ----- */
         case 'valider':
             if ($methode !== 'POST') erreur('POST attendu', 405);
-            if (!est_admin($cer, $entree['admin'] ?? '')) erreur('Réservé à l\'administration du cercle', 403);
+            exiger_admin($cer, $entree);
             $c = cours_du_cercle($db, $code, (string)($entree['cours'] ?? ''));
             if (!empty($entree['accepte'])) {
                 $db->prepare('UPDATE cours SET statut = ? WHERE id = ?')->execute(['ok', $c['id']]);
@@ -297,12 +381,44 @@ try {
             }
             repondre(['ok' => true]);
 
-        /* ----- Supprimer un cours (admin) : ses inscriptions partent avec lui ----- */
+        /* ----- Supprimer un cours (gestion) : ses inscriptions partent avec lui ----- */
         case 'supprimer_cours':
             if ($methode !== 'POST') erreur('POST attendu', 405);
-            if (!est_admin($cer, $entree['admin'] ?? '')) erreur('Réservé à l\'administration du cercle', 403);
+            exiger_admin($cer, $entree);
             $c = cours_du_cercle($db, $code, (string)($entree['cours'] ?? ''));
             $db->prepare('DELETE FROM cours WHERE id = ?')->execute([$c['id']]);
+            repondre(['ok' => true]);
+
+        /* ----- Interrompre un cours, ou fermer le club (sans cours), du … au … (gestion) ----- */
+        case 'interrompre':
+            if ($methode !== 'POST') erreur('POST attendu', 405);
+            exiger_admin($cer, $entree);
+            $cours = null;
+            if (!empty($entree['cours'])) $cours = cours_du_cercle($db, $code, (string)$entree['cours'])['id'];
+            $du = verifier_date($entree['du'] ?? '', 'Date de début');
+            $au = verifier_date($entree['au'] ?? $du, 'Date de fin');
+            if ($au < $du) erreur('La fin est avant le début');
+            if ($au < aujourdhui()) erreur('Cette période est déjà passée');
+            if ($du > dans(HORIZON_JOURS)) erreur('Date hors de portée');
+            $st = $db->prepare('SELECT COUNT(*) FROM interruptions WHERE cercle = ?');
+            $st->execute([$code]);
+            if ((int)$st->fetchColumn() >= MAX_INTERRUPTIONS) erreur('Trop d\'interruptions enregistrées');
+            $id = aleatoire(6);
+            $db->prepare('INSERT INTO interruptions (id, cercle, cours, du, au) VALUES (?, ?, ?, ?, ?)')
+               ->execute([$id, $code, $cours, $du, $au]);
+            // Les inscriptions déjà faites sur les séances supprimées disparaissent.
+            if ($cours) {
+                $db->prepare('DELETE FROM inscriptions WHERE cercle = ? AND cours = ? AND date BETWEEN ? AND ?')->execute([$code, $cours, $du, $au]);
+            } else {
+                $db->prepare('DELETE FROM inscriptions WHERE cercle = ? AND date BETWEEN ? AND ?')->execute([$code, $du, $au]);
+            }
+            repondre(['id' => $id]);
+
+        /* ----- Annuler une interruption (gestion) ----- */
+        case 'annuler_interruption':
+            if ($methode !== 'POST') erreur('POST attendu', 405);
+            exiger_admin($cer, $entree);
+            $db->prepare('DELETE FROM interruptions WHERE id = ? AND cercle = ?')->execute([(string)($entree['id'] ?? ''), $code]);
             repondre(['ok' => true]);
 
         default:
