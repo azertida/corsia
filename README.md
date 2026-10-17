@@ -18,6 +18,7 @@ On partage sa présence, pas sa vie :
   - pour entrer : **Cette fois** (une seule séance) ou **Chaque jeudi** (« Un vendredi sur deux ») ;
   - ensuite, trois réglages qui montrent chacun leur état :
     - **J'y vais | Pas cette fois** pour cette séance ;
+    - une case **Réservé au club**, repère privé qui reste sur le téléphone (le cercle ne le voit pas) ; tant qu'elle n'est pas cochée, la carte affiche « à réserver » ;
     - un interrupteur **Chaque jeudi** pour l'habitude : allumé, Corsia montre au cercle sa présence aux séances correspondantes dès qu'elles sont réservables au club, 9 jours à l'avance (Corsia ne réserve rien au club) ; éteint, une séance déjà prévue le reste ;
     - **Un petit mot ?** (les réactions), quand on y va.
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
@@ -42,7 +43,7 @@ On partage sa présence, pas sa vie :
 
 | Où | Quoi | Combien de temps |
 |---|---|---|
-| Le téléphone | code du cercle, surnom, animal, habitudes, jetons de ses inscriptions | jusqu'à ce qu'on les efface |
+| Le téléphone | code du cercle, surnom, animal, habitudes, jetons de ses inscriptions, repères « Réservé au club » | jusqu'à ce qu'on les efface |
 | Le serveur | liste des cours et des interruptions ; pour chaque séance à venir : surnom, animal, réaction | inscriptions et interruptions effacées une fois passées ; séances uniques aussi |
 
 - Une même personne (même surnom, même animal) n'apparaît qu'**une fois par séance** : en cas de réinstallation ou de deuxième appareil, la nouvelle inscription remplace l'ancienne.

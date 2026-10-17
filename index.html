@@ -97,6 +97,10 @@
                                 box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
   .interrupteur[aria-checked="true"] .piste { background: var(--bleu); }
   .interrupteur[aria-checked="true"] .piste::after { transform: translateX(20px); }
+  .case { display: flex; align-items: center; gap: 12px; min-height: 44px; font-weight: 700; font-size: 16px; }
+  .case input { width: 24px; height: 24px; flex: none; accent-color: var(--bleu); margin: 0; }
+  .case .detail { display: block; font-weight: 400; font-size: 14px; color: var(--doux); }
+  .a-reserver { color: var(--ocre); font-weight: 700; text-transform: none; letter-spacing: 0; }
   .interrupteur .detail { display: block; font-weight: 400; font-size: 14px; color: var(--doux); }
   .reaction { min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-weight: 700; font-size: 15px; }
   .reaction[aria-pressed="true"] { border: 2px solid var(--bleu); background: var(--bleu-pale); color: var(--bleu); }
@@ -170,7 +174,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.15';
+  const VERSION = '3.16';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -195,6 +199,7 @@
   let profil = lire('profil', null);          // { surnom, animal }
   let habitudes = lire('habitudes', []);      // [ idCours ]
   let miennes = lire('miennes', {});          // { "idCours|date": { id, jeton, source } }
+  let reserves = lire('reserves', {});        // { "idCours|date": true } = réservé au club (repère privé, jamais envoyé)
   let absences = lire('absences', {});        // { "idCours|date": true } = « pas cette fois »
   let donnees = null;                         // réponse du serveur
   let ecran = 'semaine';
@@ -294,6 +299,8 @@
     const auj = aujourdhui();
     for (const k of Object.keys(absences)) if (k.split('|')[1] < auj) delete absences[k];
     for (const k of Object.keys(miennes)) if (k.split('|')[1] < auj) delete miennes[k];
+    for (const k of Object.keys(reserves)) if (k.split('|')[1] < auj) delete reserves[k];
+    ecrire('reserves', reserves);
     if (donnees) {
       const ids = new Set(donnees.inscriptions.map((i) => i.id));
       for (const [k, v] of Object.entries(miennes)) if (!ids.has(v.id)) delete miennes[k];
@@ -315,6 +322,7 @@
     await api('retirer', { id: m.id, jeton: m.jeton });
     delete miennes[k];
     ecrire('miennes', miennes);
+    if (reserves[k]) { delete reserves[k]; ecrire('reserves', reserves); }
   }
 
   // Une inscription faite sous mon surnom et mon animal, mais dont ce téléphone n'a pas le jeton
@@ -587,7 +595,8 @@
     const cartes = liste.map((s) => {
       const c = s.cours;
       const unique = c.rythme === 0 ? '<span class="special">séance unique</span>' : '';
-      const entete = `<div><div class="quand">${dateFr(s.date)}</div>
+      const aReserver = miennes[s.cle] && !reserves[s.cle] ? ' <span class="a-reserver">· à réserver</span>' : '';
+      const entete = `<div><div class="quand">${dateFr(s.date)}${s.coupure ? '' : aReserver}</div>
                       <div class="quoi">${esc(c.nom)} · ${heureFr(c.heure)}${unique}</div></div>`;
       if (s.coupure) {
         const i = s.coupure;
@@ -626,7 +635,9 @@
             ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
             </div></div>`;
         }
-        action = `<div class="reglages">${seance}${habitude}${mot}</div>`;
+        const resa = moi ? `<label class="case"><input type="checkbox" data-reserve="${s.cle}" ${reserves[s.cle] ? 'checked' : ''}>
+            <span>Réservé au club<span class="detail">Rien que pour toi${NB}: le cercle ne le voit pas</span></span></label>` : '';
+        action = `<div class="reglages">${seance}${resa}${habitude}${mot}</div>`;
       } else if (c.rythme === 0) {
         action = `<button class="btn" data-venir="${s.cle}">J’y vais</button>`;
       } else {
@@ -719,6 +730,10 @@
       if (habitudes.includes(k.split('|')[0])) { absences[k] = true; ecrire('absences', absences); }
       await retirer(k);
     }));
+    $app.querySelectorAll('[data-reserve]').forEach((b) => b.onchange = () => {
+      if (b.checked) reserves[b.dataset.reserve] = true; else delete reserves[b.dataset.reserve];
+      ecrire('reserves', reserves); afficher();
+    });
     $app.querySelectorAll('[data-reagir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const m = miennes[b.dataset.reagir];
       const r = b.dataset.r;
@@ -1002,12 +1017,13 @@
         <ul>
           <li>le code de ton cercle, ton animal et ton surnom${NB};</li>
           <li>les cours que tu as cochés comme habitudes${NB};</li>
-          <li>de quoi modifier ou retirer tes propres inscriptions.</li>
+          <li>de quoi modifier ou retirer ta présence aux séances${NB};</li>
+          <li>tes repères «${NB}Réservé au club${NB}», que personne d’autre ne voit.</li>
         </ul>
         <h3>Sur le serveur</h3>
         <ul>
           <li>la liste des cours du cercle et leurs interruptions${NB};</li>
-          <li>pour chaque séance à venir${NB}: le surnom, l’animal et la réaction de celles et ceux qui viennent.</li>
+          <li>pour chaque séance à venir${NB}: le surnom, l’animal et la réaction de celles et ceux qui y vont.</li>
         </ul>
         <p>Ta présence à une séance <strong>s’efface toute seule après la séance</strong>. Il n’y a pas d’historique${NB}: personne ne peut savoir qui est venu la semaine passée.</p>
         <p>Le serveur est hébergé en France, chez alwaysdata.</p>
