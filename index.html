@@ -88,6 +88,16 @@
   .bascule button[aria-pressed="true"] { background: var(--bleu); color: #fff; }
 
   .reactions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .reglages { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--bord); padding-top: 12px; }
+  .libelle { font-size: 15px; font-weight: 700; color: var(--doux); }
+  .interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px;
+                  background: none; border: none; padding: 0; font-weight: 700; font-size: 16px; color: var(--encre); text-align: left; }
+  .interrupteur .piste { flex: none; width: 52px; height: 32px; border-radius: 16px; background: var(--bord-fort); position: relative; transition: background .15s; }
+  .interrupteur .piste::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff;
+                                box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+  .interrupteur[aria-checked="true"] .piste { background: var(--bleu); }
+  .interrupteur[aria-checked="true"] .piste::after { transform: translateX(20px); }
+  .interrupteur .detail { display: block; font-weight: 400; font-size: 14px; color: var(--doux); }
   .reaction { min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-weight: 700; font-size: 15px; }
   .reaction[aria-pressed="true"] { border: 2px solid var(--bleu); background: var(--bleu-pale); color: var(--bleu); }
 
@@ -160,7 +170,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.12';
+  const VERSION = '3.13';
   const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -596,22 +606,28 @@
       const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
 
       const chaque = c.rythme === 2 ? `Un ${JOURS[c.jour]} sur deux` : `Chaque ${JOURS[c.jour]}`;
-      const plusChaque = `<button class="btn discret petit secondaire" data-oublier="${c.id}">Ne plus y aller ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `chaque ${JOURS[c.jour]}`}</button>`;
       let action;
-      if (moi) {
-        const actuelles = (reactionDe.get(moi.id) || '').split(',');
-        action = `<div class="etat">✓ ${habituel ? `Tu y vas, ${c.rythme === 2 ? `un ${JOURS[c.jour]} sur deux` : `comme chaque ${JOURS[c.jour]}`}` : c.rythme === 0 ? 'Tu y vas' : 'Tu y vas, cette fois'}</div>
-          <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)">
+      if (moi || habituel) {
+        // Trois réglages, qui montrent tous un état : cette séance, l'habitude, le petit mot.
+        const seance = `<div class="bascule" role="group" aria-label="Cette séance">
+            <button ${moi ? 'aria-pressed="true"' : `aria-pressed="false" data-venir="${s.cle}"`}>J’y vais</button>
+            <button ${moi ? `aria-pressed="false" data-retirer="${s.cle}"` : 'aria-pressed="true"'}>Pas cette fois</button>
+          </div>`;
+        const habitude = c.rythme === 0 ? '' : `<button class="interrupteur" role="switch" aria-checked="${habituel}"
+            ${habituel ? `data-oublier="${c.id}"` : `data-adopter="${s.cle}"`}>
+            <span>${chaque}<span class="detail">${habituel ? 'Corsia t’inscrit chaque fois' : 'Pour cette séance seulement'}</span></span>
+            <span class="piste" aria-hidden="true"></span></button>`;
+        let mot = '';
+        if (moi) {
+          const actuelles = (reactionDe.get(moi.id) || '').split(',');
+          mot = `<div><div class="libelle">Un petit mot${NB}?</div>
+            <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)" style="margin-top:8px">
             ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
-          </div>
-          <button class="btn discret" data-retirer="${s.cle}">${habituel ? 'Pas cette fois' : 'Finalement, je n’y vais pas'}</button>
-          ${habituel ? plusChaque : c.rythme !== 0 ? `<button class="btn discret petit secondaire" data-adopter="${s.cle}">En faire une habitude${NB}: ${chaque.toLowerCase()}</button>` : ''}`;
-      } else if (habituel && absences[s.cle]) {
-        action = `<div class="doux">Pas cette fois</div>
-                  <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>
-                  ${plusChaque}`;
-      } else if (habituel || c.rythme === 0) {
-        action = `<button class="btn" data-venir="${s.cle}">J’y vais</button>${habituel ? plusChaque : ''}`;
+            </div></div>`;
+        }
+        action = `<div class="reglages">${seance}${habitude}${mot}</div>`;
+      } else if (c.rythme === 0) {
+        action = `<button class="btn" data-venir="${s.cle}">J’y vais</button>`;
       } else {
         action = `<div class="choix">
             <button class="btn" data-venir="${s.cle}">Cette fois</button>
@@ -686,7 +702,7 @@
       delete absences[s.cle]; ecrire('absences', absences);
       if (miennes[s.cle]) { miennes[s.cle].source = 'habitude'; ecrire('miennes', miennes); }
       else await inscrire(s, 'habitude');
-    }, `C’est noté${NB}: ${b.textContent.replace(/^.*?:\s*/, '').toLowerCase()}`));
+    }, `C’est noté${NB}: ${(b.classList.contains('interrupteur') ? b.firstElementChild.firstChild.textContent : b.textContent).trim().toLowerCase()}`));
     $app.querySelectorAll('[data-oublier]').forEach((b) => b.onclick = () => agir(b, async () => {
       const id = b.dataset.oublier;
       habitudes = habitudes.filter((h) => h !== id); ecrire('habitudes', habitudes);
@@ -695,12 +711,7 @@
       ecrire('miennes', miennes);
       for (const k of Object.keys(absences)) if (k.startsWith(id + '|')) delete absences[k];
       ecrire('absences', absences);
-    }, `Habitude retirée${NB}: cette séance reste prévue si tu y étais inscrite`));
-    $app.querySelectorAll('[data-revenir]').forEach((b) => b.onclick = () => agir(b, async () => {
-      const s = toutes.find((x) => x.cle === b.dataset.revenir);
-      delete absences[s.cle]; ecrire('absences', absences);
-      await inscrire(s, 'habitude');
-    }));
+    }, 'Habitude retirée'));
     $app.querySelectorAll('[data-retirer]').forEach((b) => b.onclick = () => agir(b, async () => {
       const k = b.dataset.retirer;
       if (habitudes.includes(k.split('|')[0])) { absences[k] = true; ecrire('absences', absences); }

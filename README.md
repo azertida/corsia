@@ -15,10 +15,11 @@ On partage sa présence, pas sa vie :
 
 - **Un cercle** se rejoint par un lien d'invitation qui contient son code. Sans ce code, on ne voit rien.
 - **Tout se décide dans la semaine**, sur la carte de chaque séance :
-  - **Chaque jeudi** (ou « Un vendredi sur deux ») : on en fait une habitude ; à chaque ouverture, Corsia inscrit aux séances correspondantes des 7 prochains jours ;
-  - **Cette fois** : on vient à une seule séance, hors de ses habitudes ;
-  - **Pas cette fois** : on se retire d'une séance sans toucher à ses habitudes ;
-  - **Ne plus y aller chaque jeudi** / **En faire une habitude** : on change d'avis dans un sens ou dans l'autre (une séance déjà prévue le reste, en « cette fois »).
+  - pour entrer : **Cette fois** (une seule séance) ou **Chaque jeudi** (« Un vendredi sur deux ») ;
+  - ensuite, trois réglages qui montrent chacun leur état :
+    - **J'y vais | Pas cette fois** pour cette séance ;
+    - un interrupteur **Chaque jeudi** pour l'habitude : allumé, Corsia inscrit aux séances correspondantes des 7 prochains jours à chaque ouverture ; éteint, une séance déjà prévue le reste ;
+    - **Un petit mot ?** (les réactions), quand on y va.
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
 - **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).
 - **Mes cours / Tous les cours** : l'écran de la semaine montre par défaut ses propres cours.
