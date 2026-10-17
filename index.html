@@ -23,9 +23,10 @@
     -webkit-text-size-adjust: 100%;
   }
   main { max-width: 520px; margin: 0 auto; padding: 0 16px 40px; }
-  h1, h2 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
+  h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
   h1 { font-size: 34px; color: var(--bleu); letter-spacing: -0.5px; }
   h2 { font-size: 22px; }
+  h3 { font-size: 19px; }
   .titre-ecran { font-size: 28px; color: var(--encre); }
   p { margin: 0; }
   .doux { color: var(--doux); }
@@ -48,8 +49,12 @@
   .pile { display: flex; flex-direction: column; gap: 14px; }
   .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
   .carte.mienne { border: 2px solid var(--bleu); }
+  .carte.annulee { background: transparent; border-style: dashed; }
+  .carte.annulee .quoi { color: var(--doux); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .mention { display: inline-flex; align-self: flex-start; background: var(--sable); color: var(--encre); border-radius: 8px; padding: 4px 10px; font-weight: 700; font-size: 15px; }
   .quand { font-size: 15px; color: var(--ocre); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
   .quoi { font-size: 20px; font-weight: 700; }
+  .special { font-size: 14px; font-weight: 700; color: var(--bleu); background: var(--bleu-pale); border-radius: 6px; padding: 2px 8px; margin-left: 6px; vertical-align: 2px; }
   .qui { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
   .qui .pastille + .pastille { margin-left: -10px; }
   .qui .noms { margin-left: 10px; color: var(--doux); font-size: 16px; }
@@ -59,16 +64,24 @@
          font-weight: 700; font-size: 17px; padding: 0 16px; }
   .btn.plein { background: var(--bleu); color: #fff; border-color: var(--bleu); }
   .btn.discret { border-color: var(--bord-fort); color: var(--encre); }
-  .btn.danger { border-color: var(--rouge); color: var(--rouge); }
+  .btn.petit { min-height: 44px; font-size: 16px; padding: 0 12px; }
   .btn:disabled { opacity: 0.5; }
   .rangee { display: flex; gap: 10px; flex-wrap: wrap; }
-  .btn.pause { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ocre); border-color: var(--bord-fort); margin-top: 10px; }
   .rangee .btn { flex: 1 1 140px; }
-  .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 46px; padding: 0 8px; display: inline-flex; align-items: center; gap: 8px; }
+  .btn.pause { display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ocre); border-color: var(--bord-fort); margin-top: 10px; }
+  .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 44px; padding: 0 6px; display: inline-flex; align-items: center; gap: 8px; }
+
+  .bascule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--sable); border-radius: 14px; padding: 4px; }
+  .bascule button { min-height: 44px; border: none; border-radius: 11px; background: transparent; font-weight: 700; font-size: 16px; }
+  .bascule button[aria-pressed="true"] { background: var(--bleu); color: #fff; }
+
+  .reactions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .reaction { min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-weight: 700; font-size: 15px; }
+  .reaction[aria-pressed="true"] { border: 2px solid var(--bleu); background: var(--bleu-pale); color: var(--bleu); }
 
   label.champ { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
-  input[type=text], input[type=time], select {
-    min-height: 50px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-size: 18px; font-weight: 400;
+  input[type=text], input[type=time], input[type=date], select {
+    min-height: 50px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-size: 18px; font-weight: 400; width: 100%;
   }
   input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #E8A23A; outline-offset: 2px; }
 
@@ -81,7 +94,13 @@
 
   .coche { display: flex; align-items: center; gap: 12px; min-height: 48px; font-weight: 700; }
   .coche input { width: 26px; height: 26px; accent-color: var(--bleu); flex: none; }
-  .ligne-cours { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .bloc-cours { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--bord); }
+  .bloc-cours:last-child { border-bottom: none; }
+  .bloc-cours .titre { font-weight: 700; }
+  .bloc-cours .detail { font-size: 15px; color: var(--doux); }
+  .outils { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .interruption { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--sable); border-radius: 10px; padding: 4px 4px 4px 12px; font-size: 15px; }
+  .formulaire { display: flex; flex-direction: column; gap: 10px; background: var(--sable); border-radius: 12px; padding: 12px; }
 
   .encadre { background: var(--sable); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
   .cle { font-family: ui-monospace, Menlo, monospace; font-size: 15px; overflow-wrap: anywhere; background: var(--carte); border-radius: 8px; padding: 10px; user-select: all; }
@@ -111,10 +130,11 @@
     ['meduse', 'Méduse'], ['dauphin', 'Dauphin'], ['phoque', 'Phoque'], ['manchot', 'Manchot'],
     ['baleine', 'Baleine'], ['grenouille', 'Grenouille'], ['poisson-globe', 'Poisson-globe'], ['crabe', 'Crabe'],
   ];
-  const JOURS = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
   const FOND = { poulpe: '#FBE3DA', capybara: '#F3E6D6', loutre: '#F3E6D6', tortue: '#E2EEDA', meduse: '#EEE5F7',
                  dauphin: '#E3EEF4', phoque: '#E9ECEF', manchot: '#E9ECEF', baleine: '#E3EEF4', grenouille: '#E2EEDA',
-                 'poisson-globe': '#FBEFD5', crabe: '#FBE3DA' };
+                 'poisson-globe': '#FBEFD5', crabe: '#FBE3DA', raie: '#E3EEF4', hippocampe: '#FBEFD5' };
+  const REACTIONS = [['hate', '🙌', 'J’ai hâte'], ['retard', '⏰', 'Un peu en retard'], ['peutetre', '🤷', 'Peut-être pas']];
+  const JOURS = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
   /* ================= Stockage local ================= */
   const lire = (k, def) => { try { const v = localStorage.getItem(P + k); return v === null ? def : JSON.parse(v); } catch { return def; } };
@@ -128,28 +148,35 @@
   let absences = lire('absences', {});        // { "idCours|date": true } = « pas cette fois »
   let donnees = null;                         // réponse du serveur
   let ecran = 'semaine';
+  let ouvert = null;                          // formulaire d'interruption ouvert (id du cours, ou 'club')
 
   /* ================= Outils ================= */
   const $app = document.getElementById('app');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const nomAnimal = (id) => (ANIMAUX.find((a) => a[0] === id) || [id, id])[1];
   const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const versDate = (s) => { const [a, m, j] = s.split('-').map(Number); return new Date(a, m - 1, j); };
   const jourIso = (d) => ((d.getDay() + 6) % 7) + 1;
+  const ecartJours = (a, b) => Math.round((versDate(b) - versDate(a)) / 864e5);
   const heureFr = (h) => h.replace(':', ' h ').replace(/ h 00$/, ' h');
   const cle = (cours, date) => `${cours}|${date}`;
+  const aujourdhui = () => iso(new Date());
+  const dateCourte = (s) => new Intl.DateTimeFormat('fr-BE', { day: 'numeric', month: 'long' }).format(versDate(s));
+  const dateMoyenne = (s) => new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }).format(versDate(s));
 
   function dateFr(dateIso) {
-    const [a, m, j] = dateIso.split('-').map(Number);
-    const d = new Date(a, m - 1, j);
-    const aujourdhui = iso(new Date());
-    const demain = iso(new Date(Date.now() + 864e5));
-    if (dateIso === aujourdhui) return 'Aujourd’hui';
-    if (dateIso === demain) return 'Demain';
-    return new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'short' }).format(d);
+    if (dateIso === aujourdhui()) return 'Aujourd’hui';
+    if (dateIso === iso(new Date(Date.now() + 864e5))) return 'Demain';
+    return new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'short' }).format(versDate(dateIso));
+  }
+
+  function rythmeFr(c) {
+    if (c.rythme === 0) return `${dateMoyenne(c.ref)}, ${heureFr(c.heure)} · séance unique`;
+    if (c.rythme === 2) return `${JOURS[c.jour]} ${heureFr(c.heure)} · une semaine sur deux`;
+    return `chaque ${JOURS[c.jour]}, ${heureFr(c.heure)}`;
   }
 
   function pastille(animal, grande = false) {
-    const id = ANIMAUX.some((a) => a[0] === animal) ? animal : 'poulpe';
+    const id = FOND[animal] ? animal : 'poulpe';
     return `<span class="pastille${grande ? ' grande' : ''}" style="background:${FOND[id]}"><img src="animaux/${id}.png" alt=""></span>`;
   }
 
@@ -178,35 +205,47 @@
     return json;
   }
 
-  /* ================= Séances de la semaine ================= */
+  /* ================= Séances ================= */
+  function aLieu(c, date) {
+    if (c.rythme === 0) return date === c.ref;
+    if (jourIso(versDate(date)) !== c.jour) return false;
+    if (c.rythme === 2 && c.ref) return ((ecartJours(c.ref, date) % 14) + 14) % 14 === 0;
+    return true;
+  }
+
+  function interruptionDe(coursId, date) {
+    const liste = donnees?.interruptions || [];
+    return liste.find((i) => !i.cours && i.du <= date && date <= i.au)
+        || liste.find((i) => i.cours === coursId && i.du <= date && date <= i.au) || null;
+  }
+
   function seances() {
     if (!donnees) return [];
     const liste = [];
     const maintenant = new Date();
     for (let i = 0; i < FENETRE; i++) {
       const d = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + i);
+      const date = iso(d);
       for (const c of donnees.cours) {
-        if (c.jour !== jourIso(d)) continue;
-        const date = iso(d);
+        if (!aLieu(c, date)) continue;
         if (i === 0) {                                   // séance du jour terminée depuis plus d'1 h 30 : on la masque
           const [h, m] = c.heure.split(':').map(Number);
           if (maintenant - new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m) > 90 * 60e3) continue;
         }
-        liste.push({ cours: c, date, cle: cle(c.id, date) });
+        liste.push({ cours: c, date, cle: cle(c.id, date), coupure: interruptionDe(c.id, date) });
       }
     }
     return liste.sort((a, b) => (a.date + a.cours.heure).localeCompare(b.date + b.cours.heure));
   }
 
   function nettoyer() {
-    const aujourdhui = iso(new Date());
-    for (const k of Object.keys(absences)) if (k.split('|')[1] < aujourdhui) delete absences[k];
-    for (const k of Object.keys(miennes)) if (k.split('|')[1] < aujourdhui) delete miennes[k];
+    const auj = aujourdhui();
+    for (const k of Object.keys(absences)) if (k.split('|')[1] < auj) delete absences[k];
+    for (const k of Object.keys(miennes)) if (k.split('|')[1] < auj) delete miennes[k];
     if (donnees) {
-      // Une inscription disparue du serveur (cours supprimé…) est oubliée ici aussi.
       const ids = new Set(donnees.inscriptions.map((i) => i.id));
       for (const [k, v] of Object.entries(miennes)) if (!ids.has(v.id)) delete miennes[k];
-      const cours = new Set(donnees.cours.map((c) => c.id));
+      const cours = new Set(donnees.cours.filter((c) => c.rythme !== 0).map((c) => c.id));
       habitudes = habitudes.filter((h) => cours.has(h));
     }
     ecrire('absences', absences); ecrire('miennes', miennes); ecrire('habitudes', habitudes);
@@ -231,18 +270,20 @@
     if (!profil || lire('pause', false)) return false;
     let change = false;
     for (const s of seances()) {
+      if (s.coupure) continue;
       if (habitudes.includes(s.cours.id) && !miennes[s.cle] && !absences[s.cle]) {
-        await inscrire(s, 'habitude'); change = true;
+        try { await inscrire(s, 'habitude'); change = true; } catch {}
       }
     }
     return change;
   }
 
   async function charger() {
-    donnees = await api('semaine', null, cercle.admin ? { admin: cercle.admin } : {});
+    const params = cercle.admin ? { admin: cercle.admin } : {};
+    donnees = await api('semaine', null, params);
     if (donnees.nom && donnees.nom !== cercle.nom) { cercle.nom = donnees.nom; ecrire('cercle', cercle); }
     nettoyer();
-    if (await appliquerHabitudes()) donnees = await api('semaine', null, cercle.admin ? { admin: cercle.admin } : {});
+    if (await appliquerHabitudes()) donnees = await api('semaine', null, params);
   }
 
   /* ================= Écrans ================= */
@@ -252,6 +293,7 @@
     if (!profil || ecran === 'profil') return ecranProfil();
     if (ecran === 'cours') return ecranCours();
     if (ecran === 'inviter') return ecranInviter();
+    if (ecran === 'gerer') return ecranGerer();
     return ecranSemaine();
   }
 
@@ -291,16 +333,16 @@
       <div class="entete"><div><h1>Corsia</h1><div class="sous">${esc(cercle.nom || 'Ton cercle')}</div></div></div>
       <div class="pile">
         <div class="carte">
-          <h2>Ton cercle est créé</h2>
-          <p>Voici ta <strong>clé d’administration</strong>. Elle te permet d’ajouter des cours et de valider ceux qu’on te propose.</p>
-          <div class="cle" id="laCle">${esc(cercle.admin)}</div>
+          <h2>Ta clé de gestion</h2>
+          <p>Cette <strong>clé d’administration</strong> te permet d’ajouter des cours, de les interrompre et de valider ceux qu’on te propose.</p>
+          <div class="cle">${esc(cercle.admin)}</div>
           <p class="doux">Range-la dans ton gestionnaire de mots de passe. Ne la partage pas${NB}: l’invitation, c’est un autre lien.</p>
           <button class="btn" id="copier">Copier la clé</button>
           <button class="btn plein" id="suite">C’est noté</button>
         </div>
       </div>`;
     document.getElementById('copier').onclick = () => copier(cercle.admin, 'Clé copiée');
-    document.getElementById('suite').onclick = () => { ecran = 'semaine'; afficher(); };
+    document.getElementById('suite').onclick = () => { ecran = profil ? 'cours' : 'semaine'; afficher(); };
   }
 
   function ecranProfil() {
@@ -335,7 +377,6 @@
       e.target.disabled = true;
       const ancien = profil;
       profil = choix; ecrire('profil', profil);
-      // Mettre à jour les inscriptions déjà faites
       if (ancien && (ancien.surnom !== profil.surnom || ancien.animal !== profil.animal)) {
         for (const m of Object.values(miennes)) {
           try { await api('modifier', { id: m.id, jeton: m.jeton, surnom: profil.surnom, animal: profil.animal }); } catch {}
@@ -347,47 +388,79 @@
   }
 
   function ecranSemaine() {
-    const liste = seances();
-    const parId = new Map();
+    const toutes = seances();
+    const parCle = new Map();
     for (const i of donnees?.inscriptions || []) {
       const k = cle(i.cours, i.date);
-      if (!parId.has(k)) parId.set(k, []);
-      parId.get(k).push(i);
+      if (!parCle.has(k)) parCle.set(k, []);
+      parCle.get(k).push(i);
     }
     const mesIds = new Set(Object.values(miennes).map((m) => m.id));
+    const reactionDe = new Map((donnees?.inscriptions || []).map((i) => [i.id, i.reaction]));
     const pause = lire('pause', false);
 
+    // Filtre « Mes cours / Tous les cours » : par défaut, mes cours si j'ai des habitudes.
+    let filtre = lire('filtre', null) || (habitudes.length ? 'miens' : 'tous');
+    const estMien = (s) => habitudes.includes(s.cours.id) || !!miennes[s.cle];
+    const liste = filtre === 'miens' ? toutes.filter(estMien) : toutes;
+    const cachees = toutes.length - liste.length;
+
+    const emoji = (r) => { const x = REACTIONS.find((y) => y[0] === r); return x ? `${NB}${x[1]}` : ''; };
+
     const cartes = liste.map((s) => {
-      const inscrits = parId.get(s.cle) || [];
-      const moi = !!miennes[s.cle];
-      const habituel = habitudes.includes(s.cours.id);
+      const c = s.cours;
+      const unique = c.rythme === 0 ? '<span class="special">séance unique</span>' : '';
+      const entete = `<div><div class="quand">${dateFr(s.date)}</div>
+                      <div class="quoi">${esc(c.nom)} · ${heureFr(c.heure)}${unique}</div></div>`;
+      if (s.coupure) {
+        const i = s.coupure;
+        const texte = !i.cours ? 'Club fermé'
+          : i.du === i.au ? 'Pas de cours ce jour-là'
+          : `Pas de cours jusqu’au ${dateCourte(i.au)}`;
+        return `<article class="carte annulee">${entete}<span class="mention">${texte}</span></article>`;
+      }
+      const inscrits = parCle.get(s.cle) || [];
+      const moi = miennes[s.cle];
+      const habituel = habitudes.includes(c.id);
       const autres = inscrits.filter((i) => !mesIds.has(i.id));
-      const noms = [...(moi ? ['Toi'] : []), ...autres.map((i) => esc(i.surnom))];
+      const noms = [...(moi ? ['Toi' + emoji(reactionDe.get(moi.id))] : []),
+                    ...autres.map((i) => esc(i.surnom) + emoji(i.reaction))];
       const texteNoms = noms.length === 0 ? 'Personne du cercle pour l’instant'
         : noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
       const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
 
       let action;
       if (moi) {
-        action = `<div class="etat">✓ ${habituel ? `Tu y vas, comme chaque ${JOURS[s.cours.jour]}` : 'Tu y vas'}</div>
-                  <button class="btn discret" data-retirer="${s.cle}">Pas cette fois</button>`;
+        const actuelle = reactionDe.get(moi.id) || '';
+        action = `<div class="etat">✓ ${habituel ? `Tu y vas, comme chaque ${JOURS[c.jour]}` : 'Tu y vas'}</div>
+          <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)">
+            ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelle === id}">${e} ${t}</button>`).join('')}
+          </div>
+          <button class="btn discret" data-retirer="${s.cle}">Pas cette fois</button>`;
       } else if (habituel && absences[s.cle]) {
         action = `<div class="doux">Pas cette fois</div>
                   <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>`;
       } else {
-        action = `<button class="btn" data-venir="${s.cle}">${habituel ? 'J’y vais' : 'Je viens exceptionnellement'}</button>`;
+        action = `<button class="btn" data-venir="${s.cle}">${habituel ? 'J’y vais' : c.rythme === 0 ? 'J’y vais' : 'Je viens exceptionnellement'}</button>`;
       }
       return `
         <article class="carte${moi ? ' mienne' : ''}">
-          <div><div class="quand">${dateFr(s.date)}</div>
-               <div class="quoi">${esc(s.cours.nom)} · ${heureFr(s.cours.heure)}</div></div>
+          ${entete}
           <div class="qui">${pastilles}<span class="noms">${texteNoms}</span></div>
           ${action}
         </article>`;
     }).join('');
 
-    const props = donnees?.propositions?.length ? `<div class="encadre"><strong>${donnees.propositions.length} cours proposé${donnees.propositions.length > 1 ? 's' : ''} à valider</strong>
+    const nbProps = donnees?.propositions?.length || 0;
+    const props = nbProps ? `<div class="encadre"><strong>${nbProps} cours proposé${nbProps > 1 ? 's' : ''} à valider</strong>
       <button class="btn" id="voirProps">Voir</button></div>` : '';
+
+    let corps;
+    if (!donnees?.cours?.length) {
+      corps = `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Mes cours${NB}».` : ''}</div>`;
+    } else if (!liste.length) {
+      corps = `<div class="vide">${filtre === 'miens' && toutes.length ? 'Aucun de tes cours dans les 7 prochains jours.' : 'Aucun cours dans les 7 prochains jours.'}</div>`;
+    } else corps = cartes;
 
     $app.innerHTML = `
       <div class="entete">
@@ -400,8 +473,12 @@
           <button class="btn plein" id="replonger">Je replonge</button></div>` : ''}
         ${props}
         <h2>Cette semaine</h2>
-        ${donnees?.cours?.length ? (cartes || '<div class="vide">Aucun cours dans les 7 prochains jours.</div>')
-          : `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Mes cours${NB}».` : ''}</div>`}
+        <div class="bascule" role="group" aria-label="Cours affichés">
+          <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
+          <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
+        </div>
+        ${corps}
+        ${filtre === 'miens' && cachees ? `<p class="doux" style="text-align:center">${cachees} autre${cachees > 1 ? 's' : ''} séance${cachees > 1 ? 's' : ''} dans «${NB}Tous les cours${NB}»</p>` : ''}
         <div class="rangee">
           <button class="btn discret" id="mesCours">Mes cours</button>
           <button class="btn discret" id="inviter">Inviter</button>
@@ -412,21 +489,26 @@
         <p class="doux" style="text-align:center;margin-top:-6px">Une pause, sans que personne ne le remarque.</p>` : ''}
       </div>`;
 
+    $app.querySelectorAll('[data-filtre]').forEach((b) => b.onclick = () => { ecrire('filtre', b.dataset.filtre); afficher(); });
     $app.querySelectorAll('[data-venir]').forEach((b) => b.onclick = () => agir(b, async () => {
-      const s = liste.find((x) => x.cle === b.dataset.venir);
+      const s = toutes.find((x) => x.cle === b.dataset.venir);
       delete absences[s.cle]; ecrire('absences', absences);
       await inscrire(s, habitudes.includes(s.cours.id) ? 'habitude' : 'ponctuel');
     }));
     $app.querySelectorAll('[data-revenir]').forEach((b) => b.onclick = () => agir(b, async () => {
-      const s = liste.find((x) => x.cle === b.dataset.revenir);
+      const s = toutes.find((x) => x.cle === b.dataset.revenir);
       delete absences[s.cle]; ecrire('absences', absences);
       await inscrire(s, 'habitude');
     }));
     $app.querySelectorAll('[data-retirer]').forEach((b) => b.onclick = () => agir(b, async () => {
       const k = b.dataset.retirer;
-      const coursId = k.split('|')[0];
-      if (habitudes.includes(coursId)) { absences[k] = true; ecrire('absences', absences); }
+      if (habitudes.includes(k.split('|')[0])) { absences[k] = true; ecrire('absences', absences); }
       await retirer(k);
+    }));
+    $app.querySelectorAll('[data-reagir]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const m = miennes[b.dataset.reagir];
+      const deja = b.getAttribute('aria-pressed') === 'true';
+      await api('modifier', { id: m.id, jeton: m.jeton, reaction: deja ? '' : b.dataset.r });
     }));
     document.getElementById('moi').onclick = () => { ecran = 'profil'; afficher(); };
     document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
@@ -434,7 +516,6 @@
     const vp = document.getElementById('voirProps'); if (vp) vp.onclick = () => { ecran = 'cours'; afficher(); };
     const pz = document.getElementById('pause'); if (pz) pz.onclick = () => agir(pz, async () => {
       ecrire('pause', true);
-      // On retire les inscriptions automatiques à venir ; les venues ponctuelles restent.
       for (const [k, m] of Object.entries(miennes)) if (m.source === 'habitude') await retirer(k);
     }, 'Bonne pause 🌊');
     const rp = document.getElementById('replonger'); if (rp) rp.onclick = () => agir(rp, async () => {
@@ -443,41 +524,117 @@
     }, 'Bon retour dans l’eau');
   }
 
+  /* ----- Formulaire d'un cours (ajout ou proposition) ----- */
+  function formulaireCours(admin) {
+    const options = JOURS.slice(1).map((j, i) => `<option value="${i + 1}">${j[0].toUpperCase() + j.slice(1)}</option>`).join('');
+    return `
+      <div class="carte">
+        <label class="champ">Nom du cours <input type="text" id="nomCours" maxlength="30" placeholder="Aquafit, Apnée…"></label>
+        <label class="champ">Rythme
+          <select id="rythme">
+            <option value="1">Chaque semaine</option>
+            <option value="2">Une semaine sur deux</option>
+            <option value="0">Séance unique</option>
+          </select></label>
+        <label class="champ" id="champJour">Jour <select id="jourCours">${options}</select></label>
+        <label class="champ" id="champRef" hidden><span id="libRef">Date d’une séance</span> <input type="date" id="refCours" min="${aujourdhui()}"></label>
+        <label class="champ">Heure <input type="time" id="heureCours" value="19:00"></label>
+        <button class="btn plein" id="ajouter">${admin ? 'Ajouter' : 'Proposer'}</button>
+        ${admin ? '' : '<p class="doux">La personne qui gère le cercle validera ta proposition.</p>'}
+      </div>`;
+  }
+
+  function brancherFormulaireCours(admin) {
+    const rythme = document.getElementById('rythme');
+    const maj = () => {
+      const r = rythme.value;
+      document.getElementById('champJour').hidden = r !== '1';
+      document.getElementById('champRef').hidden = r === '1';
+      document.getElementById('libRef').textContent = r === '0' ? 'Date' : 'Date d’une séance (la prochaine, par exemple)';
+    };
+    rythme.onchange = maj; maj();
+    document.getElementById('ajouter').onclick = (e) => {
+      const nom = document.getElementById('nomCours').value.trim();
+      const r = Number(rythme.value);
+      const ref = document.getElementById('refCours').value;
+      if (!nom) return dire('Indique le nom du cours');
+      if (r !== 1 && !ref) return dire('Indique la date');
+      agir(e.target, () => api('proposer', { admin: cercle.admin, nom, rythme: r, ref: r === 1 ? null : ref,
+        jour: Number(document.getElementById('jourCours').value), heure: document.getElementById('heureCours').value }),
+        admin ? 'Cours ajouté' : `Proposition envoyée, merci${NB}!`);
+    };
+  }
+
+  function formulaireCoupure(cible) {
+    const auj = aujourdhui();
+    return `<div class="formulaire">
+        <div class="rangee">
+          <label class="champ" style="flex:1 1 140px">Du <input type="date" id="du" min="${auj}" value="${auj}"></label>
+          <label class="champ" style="flex:1 1 140px">Au <input type="date" id="au" min="${auj}" value="${auj}"></label>
+        </div>
+        <p class="doux">Un seul jour${NB}? Mets la même date deux fois. Les inscriptions déjà faites sur ces séances seront retirées.</p>
+        <div class="rangee">
+          <button class="btn plein petit" id="validerCoupure" data-cible="${cible}">${cible === 'club' ? 'Fermer' : 'Interrompre'}</button>
+          <button class="btn discret petit" id="annulerCoupure">Annuler</button>
+        </div>
+      </div>`;
+  }
+
+  function periodeFr(i) {
+    return i.du === i.au ? `le ${dateMoyenne(i.du)}` : `du ${dateCourte(i.du)} au ${dateCourte(i.au)}`;
+  }
+
   function ecranCours() {
     const cours = donnees?.cours || [];
     const props = donnees?.propositions || [];
+    const inter = donnees?.interruptions || [];
     const admin = !!cercle.admin;
-    const options = JOURS.slice(1).map((j, i) => `<option value="${i + 1}">${j[0].toUpperCase() + j.slice(1)}</option>`).join('');
+    const ligneCoupure = (i) => `<div class="interruption"><span>Pas de cours ${periodeFr(i)}</span>
+        ${admin ? `<button class="lien" data-annuler-coupure="${i.id}">Rétablir</button>` : ''}</div>`;
+
     $app.innerHTML = `
       <div class="retour"><button id="retour">‹ Ma semaine</button></div>
       <div class="pile">
         <h2 class="titre-ecran">Mes cours</h2>
-        <p class="doux">Coche les cours où tu vas d’habitude. Corsia t’y inscrira chaque semaine${NB}; tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
+        <p class="doux">Coche les cours où tu vas d’habitude. Corsia t’y inscrira${NB}; tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
         <div class="carte">
           ${cours.length ? cours.map((c) => `
-            <div class="ligne-cours">
-              <label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
-                <span>${esc(c.nom)} · ${JOURS[c.jour]} ${heureFr(c.heure)}</span></label>
-              ${admin ? `<button class="lien" data-supprimer="${c.id}" aria-label="Supprimer ${esc(c.nom)}">Retirer</button>` : ''}
+            <div class="bloc-cours">
+              ${c.rythme === 0
+                ? `<div><div class="titre">${esc(c.nom)}</div><div class="detail">${rythmeFr(c)}</div></div>`
+                : `<label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
+                    <span>${esc(c.nom)}<br><span class="detail" style="font-weight:400">${rythmeFr(c)}</span></span></label>`}
+              ${inter.filter((i) => i.cours === c.id).map(ligneCoupure).join('')}
+              ${admin ? `<div class="outils">
+                  ${c.rythme !== 0 ? `<button class="lien" data-ouvrir="${c.id}">Interrompre</button>` : ''}
+                  <button class="lien" data-supprimer="${c.id}">Supprimer</button></div>
+                  ${ouvert === c.id ? formulaireCoupure(c.id) : ''}` : ''}
             </div>`).join('') : '<p class="doux">Aucun cours pour l’instant.</p>'}
         </div>
+
+        ${admin || inter.some((i) => !i.cours) ? `
+          <h2>Fermetures du club</h2>
+          <div class="carte">
+            ${inter.filter((i) => !i.cours).map((i) => `<div class="interruption"><span>Club fermé ${periodeFr(i)}</span>
+              ${admin ? `<button class="lien" data-annuler-coupure="${i.id}">Rétablir</button>` : ''}</div>`).join('')
+              || '<p class="doux">Aucune fermeture prévue.</p>'}
+            ${admin ? (ouvert === 'club' ? formulaireCoupure('club') : '<button class="btn discret" data-ouvrir="club">Ajouter une fermeture</button>') : ''}
+          </div>` : ''}
+
         ${admin && props.length ? `<h2>Propositions</h2><div class="carte">${props.map((c) => `
-            <div class="ligne-cours"><span>${esc(c.nom)} · ${JOURS[c.jour]} ${heureFr(c.heure)}</span>
-              <span class="rangee" style="flex:none"><button class="btn" data-accepter="${c.id}">Accepter</button>
-              <button class="btn discret" data-refuser="${c.id}">Refuser</button></span></div>`).join('')}</div>` : ''}
+            <div class="bloc-cours"><div><div class="titre">${esc(c.nom)}</div><div class="detail">${rythmeFr(c)}</div></div>
+              <div class="rangee"><button class="btn petit" data-accepter="${c.id}">Accepter</button>
+              <button class="btn discret petit" data-refuser="${c.id}">Refuser</button></div></div>`).join('')}</div>` : ''}
+
         <h2>${admin ? 'Ajouter un cours' : 'Proposer un cours'}</h2>
-        <div class="carte">
-          <label class="champ">Nom du cours <input type="text" id="nomCours" maxlength="30" placeholder="Aquafit, Apnée…"></label>
-          <div class="rangee">
-            <label class="champ" style="flex:1 1 140px">Jour <select id="jourCours">${options}</select></label>
-            <label class="champ" style="flex:1 1 120px">Heure <input type="time" id="heureCours" value="19:00"></label>
-          </div>
-          <button class="btn plein" id="ajouter">${admin ? 'Ajouter' : 'Proposer'}</button>
-          ${admin ? '' : '<p class="doux">La personne qui gère le cercle validera ta proposition.</p>'}
-        </div>
+        ${formulaireCours(admin)}
+
+        ${admin
+          ? '<button class="lien" id="voirCle" style="align-self:center">Afficher ma clé de gestion</button>'
+          : '<button class="lien" id="gerer" style="align-self:center">Je gère ce cercle</button>'}
       </div>`;
 
-    document.getElementById('retour').onclick = async () => { ecran = 'semaine'; await rafraichir(); };
+    document.getElementById('retour').onclick = async () => { ecran = 'semaine'; ouvert = null; await rafraichir(); };
     $app.querySelectorAll('[data-habitude]').forEach((b) => b.onchange = () => agir(b, async () => {
       const id = b.dataset.habitude;
       if (b.checked) { if (!habitudes.includes(id)) habitudes.push(id); }
@@ -486,21 +643,52 @@
         for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|') && m.source === 'habitude') await retirer(k);
       }
       ecrire('habitudes', habitudes);
-    }, b.checked ? 'Noté, chaque semaine' : 'Habitude retirée', false));
+    }, b.checked ? 'Noté, chaque fois' : 'Habitude retirée', false));
+    $app.querySelectorAll('[data-ouvrir]').forEach((b) => b.onclick = () => { ouvert = b.dataset.ouvrir; afficher(); });
+    const vc = document.getElementById('validerCoupure');
+    if (vc) vc.onclick = () => {
+      const du = document.getElementById('du').value, au = document.getElementById('au').value || du;
+      if (!du) return dire('Indique la date de début');
+      if (au < du) return dire('La fin est avant le début');
+      const cible = vc.dataset.cible;
+      agir(vc, async () => { await api('interrompre', { admin: cercle.admin, cours: cible === 'club' ? null : cible, du, au }); ouvert = null; },
+        cible === 'club' ? 'Fermeture enregistrée' : 'Interruption enregistrée');
+    };
+    const ac = document.getElementById('annulerCoupure'); if (ac) ac.onclick = () => { ouvert = null; afficher(); };
+    $app.querySelectorAll('[data-annuler-coupure]').forEach((b) => b.onclick = () =>
+      agir(b, () => api('annuler_interruption', { admin: cercle.admin, id: b.dataset.annulerCoupure }), 'Séances rétablies'));
     $app.querySelectorAll('[data-supprimer]').forEach((b) => b.onclick = () => {
-      if (!confirm('Retirer ce cours du cercle${NB}? Les inscriptions à venir disparaîtront aussi.'.replace('${NB}', NB))) return;
-      agir(b, () => api('supprimer_cours', { admin: cercle.admin, cours: b.dataset.supprimer }), 'Cours retiré');
+      if (!confirm(`Supprimer ce cours du cercle${NB}? Les inscriptions à venir disparaîtront aussi.`)) return;
+      agir(b, () => api('supprimer_cours', { admin: cercle.admin, cours: b.dataset.supprimer }), 'Cours supprimé');
     });
     $app.querySelectorAll('[data-accepter]').forEach((b) => b.onclick = () =>
       agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.accepter, accepte: true }), 'Cours ajouté'));
     $app.querySelectorAll('[data-refuser]').forEach((b) => b.onclick = () =>
       agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.refuser, accepte: false }), 'Proposition retirée'));
-    document.getElementById('ajouter').onclick = (e) => {
-      const nom = document.getElementById('nomCours').value.trim();
-      if (!nom) return dire('Indique le nom du cours');
-      agir(e.target, () => api('proposer', { admin: cercle.admin, nom,
-        jour: Number(document.getElementById('jourCours').value), heure: document.getElementById('heureCours').value }),
-        admin ? 'Cours ajouté' : 'Proposition envoyée, merci${NB}!'.replace('${NB}', NB));
+    brancherFormulaireCours(admin);
+    const vk = document.getElementById('voirCle'); if (vk) vk.onclick = () => { ecran = 'cle'; afficher(); };
+    const ge = document.getElementById('gerer'); if (ge) ge.onclick = () => { ecran = 'gerer'; afficher(); };
+  }
+
+  function ecranGerer() {
+    $app.innerHTML = `
+      <div class="retour"><button id="retour">‹ Mes cours</button></div>
+      <div class="pile">
+        <h2 class="titre-ecran">Je gère ce cercle</h2>
+        <p>Colle ici la <strong>clé de gestion</strong> que tu as reçue en créant le cercle. Tu la retrouves dans ton gestionnaire de mots de passe.</p>
+        <label class="champ">Clé de gestion
+          <input type="text" id="saisieCle" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text"></label>
+        <button class="btn plein" id="valider">Valider</button>
+      </div>`;
+    document.getElementById('retour').onclick = () => { ecran = 'cours'; afficher(); };
+    document.getElementById('valider').onclick = (e) => {
+      const k = document.getElementById('saisieCle').value.trim().toLowerCase();
+      if (!/^[0-9a-f]{32}$/.test(k)) return dire('Cette clé n’a pas le bon format.');
+      agir(e.target, async () => {
+        const r = await api('semaine', null, { admin: k });
+        if (!r.admin) throw new Error('Cette clé ne correspond pas à ce cercle.');
+        cercle.admin = k; ecrire('cercle', cercle); ecran = 'cours';
+      }, 'C’est bon, tu gères ce cercle');
     };
   }
 
@@ -526,7 +714,7 @@
 
   /* ================= Actions ================= */
   async function copier(texte, ok) {
-    try { await navigator.clipboard.writeText(texte); dire(ok); } catch { dire('Copie impossible : sélectionne le texte à la main.'); }
+    try { await navigator.clipboard.writeText(texte); dire(ok); } catch { dire(`Copie impossible${NB}: sélectionne le texte à la main.`); }
   }
 
   async function agir(bouton, fn, ok = null, retracer = true) {
@@ -573,7 +761,6 @@
     await rafraichir();
   }
 
-  // Rafraîchir quand on revient sur l'appli
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && cercle && profil && ecran === 'semaine') rafraichir();
   });
