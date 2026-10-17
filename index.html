@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FBF5EA">
+<meta name="referrer" content="no-referrer">
+<title>Corsia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --creme: #FBF5EA; --carte: #FFFDF8; --bord: #E8DCC4; --bord-fort: #D9CBB0;
+    --encre: #2B2118; --doux: #5E5040; --ocre: #8F5A1B; --bleu: #1F4E6B; --bleu-pale: #E3EEF4;
+    --sable: #F1E6D3; --rouge: #9B2C1F;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--creme); color: var(--encre); }
+  body {
+    font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 17px; line-height: 1.4;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 0 16px 40px; }
+  h1, h2 { font-family: 'Fraunces', Georgia, serif; margin: 0; }
+  h1 { font-size: 34px; color: var(--bleu); letter-spacing: -0.5px; }
+  h2 { font-size: 22px; }
+  .titre-ecran { font-size: 28px; color: var(--encre); }
+  p { margin: 0; }
+  .doux { color: var(--doux); }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  a { color: var(--bleu); }
+
+  .entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px 4px 16px; }
+  .entete .sous { font-size: 16px; color: var(--doux); }
+  .retour { display: flex; align-items: center; gap: 4px; padding: 20px 0 8px; }
+  .retour button { background: none; border: none; color: var(--bleu); font-weight: 700; min-height: 46px; padding: 0 8px 0 0; display: flex; align-items: center; gap: 4px; }
+
+  .pastille { width: 40px; height: 40px; border-radius: 50%; background: var(--sable); border: 2px solid var(--carte);
+              display: inline-flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
+  .pastille img { width: 32px; height: 32px; }
+  .pastille.grande { width: 52px; height: 52px; border-color: var(--bord); }
+  .pastille.grande img { width: 42px; height: 42px; }
+  .moi-btn { background: none; border: none; padding: 0; border-radius: 50%; }
+
+  .pile { display: flex; flex-direction: column; gap: 14px; }
+  .carte { background: var(--carte); border: 1px solid var(--bord); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .carte.mienne { border: 2px solid var(--bleu); }
+  .quand { font-size: 15px; color: var(--ocre); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+  .quoi { font-size: 20px; font-weight: 700; }
+  .qui { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+  .qui .pastille + .pastille { margin-left: -10px; }
+  .qui .noms { margin-left: 10px; color: var(--doux); font-size: 16px; }
+  .etat { display: flex; align-items: center; gap: 8px; color: var(--bleu); font-weight: 700; font-size: 16px; }
+
+  .btn { min-height: 48px; border-radius: 12px; border: 1.5px solid var(--bleu); background: var(--carte); color: var(--bleu);
+         font-weight: 700; font-size: 17px; padding: 0 16px; }
+  .btn.plein { background: var(--bleu); color: #fff; border-color: var(--bleu); }
+  .btn.discret { border-color: var(--bord-fort); color: var(--encre); }
+  .btn.danger { border-color: var(--rouge); color: var(--rouge); }
+  .btn:disabled { opacity: 0.5; }
+  .rangee { display: flex; gap: 10px; flex-wrap: wrap; }
+  .rangee .btn { flex: 1 1 140px; }
+  .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 46px; padding: 0 8px; display: inline-flex; align-items: center; gap: 8px; }
+
+  label.champ { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+  input[type=text], input[type=time], select {
+    min-height: 50px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-size: 18px; font-weight: 400;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #E8A23A; outline-offset: 2px; }
+
+  .grille-animaux { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .animal { min-height: 100px; border-radius: 16px; border: 1.5px solid var(--bord); background: var(--carte);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; }
+  .animal img { width: 56px; height: 56px; }
+  .animal span { font-size: 15px; font-weight: 700; }
+  .animal[aria-pressed="true"] { border: 3px solid var(--bleu); background: var(--bleu-pale); }
+
+  .coche { display: flex; align-items: center; gap: 12px; min-height: 48px; font-weight: 700; }
+  .coche input { width: 26px; height: 26px; accent-color: var(--bleu); flex: none; }
+  .ligne-cours { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+  .encadre { background: var(--sable); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .cle { font-family: ui-monospace, Menlo, monospace; font-size: 15px; overflow-wrap: anywhere; background: var(--carte); border-radius: 8px; padding: 10px; user-select: all; }
+  .message { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+             background: var(--encre); color: #fff; padding: 12px 18px; border-radius: 14px; max-width: 90vw; font-size: 16px; z-index: 10; }
+  .vide { text-align: center; padding: 30px 10px; color: var(--doux); }
+  .pied { margin-top: 28px; font-size: 14px; color: var(--doux); text-align: center; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+<div id="message" class="message" role="status" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ================= Réglages ================= */
+  const API = 'https://azertida.alwaysdata.net/corsia/api.php';
+  const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
+  const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
+  const NB = ' ';             // espace fine insécable avant ? ! : ;
+
+  const ANIMAUX = [
+    ['poulpe', 'Poulpe'], ['capybara', 'Capybara'], ['loutre', 'Loutre'], ['tortue', 'Tortue'],
+    ['meduse', 'Méduse'], ['dauphin', 'Dauphin'], ['phoque', 'Phoque'], ['manchot', 'Manchot'],
+    ['baleine', 'Baleine'], ['grenouille', 'Grenouille'], ['poisson-globe', 'Poisson-globe'], ['crabe', 'Crabe'],
+  ];
+  const JOURS = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  const FOND = { poulpe: '#FBE3DA', capybara: '#F3E6D6', loutre: '#F3E6D6', tortue: '#E2EEDA', meduse: '#EEE5F7',
+                 dauphin: '#E3EEF4', phoque: '#E9ECEF', manchot: '#E9ECEF', baleine: '#E3EEF4', grenouille: '#E2EEDA',
+                 'poisson-globe': '#FBEFD5', crabe: '#FBE3DA' };
+
+  /* ================= Stockage local ================= */
+  const lire = (k, def) => { try { const v = localStorage.getItem(P + k); return v === null ? def : JSON.parse(v); } catch { return def; } };
+  const ecrire = (k, v) => { try { localStorage.setItem(P + k, JSON.stringify(v)); } catch {} };
+  const oublier = (k) => { try { localStorage.removeItem(P + k); } catch {} };
+
+  let cercle = lire('cercle', null);          // { c, admin?, nom }
+  let profil = lire('profil', null);          // { surnom, animal }
+  let habitudes = lire('habitudes', []);      // [ idCours ]
+  let miennes = lire('miennes', {});          // { "idCours|date": { id, jeton, source } }
+  let absences = lire('absences', {});        // { "idCours|date": true } = « pas cette fois »
+  let donnees = null;                         // réponse du serveur
+  let ecran = 'semaine';
+
+  /* ================= Outils ================= */
+  const $app = document.getElementById('app');
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nomAnimal = (id) => (ANIMAUX.find((a) => a[0] === id) || [id, id])[1];
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const jourIso = (d) => ((d.getDay() + 6) % 7) + 1;
+  const heureFr = (h) => h.replace(':', ' h ').replace(/ h 00$/, ' h');
+  const cle = (cours, date) => `${cours}|${date}`;
+
+  function dateFr(dateIso) {
+    const [a, m, j] = dateIso.split('-').map(Number);
+    const d = new Date(a, m - 1, j);
+    const aujourdhui = iso(new Date());
+    const demain = iso(new Date(Date.now() + 864e5));
+    if (dateIso === aujourdhui) return 'Aujourd’hui';
+    if (dateIso === demain) return 'Demain';
+    return new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'short' }).format(d);
+  }
+
+  function pastille(animal, grande = false) {
+    const id = ANIMAUX.some((a) => a[0] === animal) ? animal : 'poulpe';
+    return `<span class="pastille${grande ? ' grande' : ''}" style="background:${FOND[id]}"><img src="animaux/${id}.png" alt=""></span>`;
+  }
+
+  let minuterie;
+  function dire(texte) {
+    const m = document.getElementById('message');
+    m.textContent = texte; m.hidden = false;
+    clearTimeout(minuterie); minuterie = setTimeout(() => { m.hidden = true; }, 3500);
+  }
+
+  async function api(action, corps = null, params = {}) {
+    let rep;
+    try {
+      if (corps) {
+        rep = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                 body: JSON.stringify({ action, c: cercle?.c, ...corps }) });
+      } else {
+        const q = new URLSearchParams({ action, c: cercle?.c || '', ...params });
+        rep = await fetch(`${API}?${q}`);
+      }
+    } catch {
+      throw new Error(`Pas de connexion pour l’instant${NB}: réessaie dans un moment.`);
+    }
+    const json = await rep.json().catch(() => ({}));
+    if (!rep.ok) { const e = new Error(json.erreur || 'Erreur du serveur'); e.statut = rep.status; throw e; }
+    return json;
+  }
+
+  /* ================= Séances de la semaine ================= */
+  function seances() {
+    if (!donnees) return [];
+    const liste = [];
+    const maintenant = new Date();
+    for (let i = 0; i < FENETRE; i++) {
+      const d = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + i);
+      for (const c of donnees.cours) {
+        if (c.jour !== jourIso(d)) continue;
+        const date = iso(d);
+        if (i === 0) {                                   // séance du jour terminée depuis plus d'1 h 30 : on la masque
+          const [h, m] = c.heure.split(':').map(Number);
+          if (maintenant - new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m) > 90 * 60e3) continue;
+        }
+        liste.push({ cours: c, date, cle: cle(c.id, date) });
+      }
+    }
+    return liste.sort((a, b) => (a.date + a.cours.heure).localeCompare(b.date + b.cours.heure));
+  }
+
+  function nettoyer() {
+    const aujourdhui = iso(new Date());
+    for (const k of Object.keys(absences)) if (k.split('|')[1] < aujourdhui) delete absences[k];
+    for (const k of Object.keys(miennes)) if (k.split('|')[1] < aujourdhui) delete miennes[k];
+    if (donnees) {
+      // Une inscription disparue du serveur (cours supprimé…) est oubliée ici aussi.
+      const ids = new Set(donnees.inscriptions.map((i) => i.id));
+      for (const [k, v] of Object.entries(miennes)) if (!ids.has(v.id)) delete miennes[k];
+      const cours = new Set(donnees.cours.map((c) => c.id));
+      habitudes = habitudes.filter((h) => cours.has(h));
+    }
+    ecrire('absences', absences); ecrire('miennes', miennes); ecrire('habitudes', habitudes);
+  }
+
+  async function inscrire(s, source) {
+    const r = await api('inscrire', { cours: s.cours.id, date: s.date, surnom: profil.surnom, animal: profil.animal });
+    miennes[s.cle] = { id: r.id, jeton: r.jeton, source };
+    ecrire('miennes', miennes);
+  }
+
+  async function retirer(k) {
+    const m = miennes[k];
+    if (!m) return;
+    await api('retirer', { id: m.id, jeton: m.jeton });
+    delete miennes[k];
+    ecrire('miennes', miennes);
+  }
+
+  // À chaque ouverture : inscription aux séances habituelles des 7 prochains jours.
+  async function appliquerHabitudes() {
+    if (!profil || lire('pause', false)) return false;
+    let change = false;
+    for (const s of seances()) {
+      if (habitudes.includes(s.cours.id) && !miennes[s.cle] && !absences[s.cle]) {
+        await inscrire(s, 'habitude'); change = true;
+      }
+    }
+    return change;
+  }
+
+  async function charger() {
+    donnees = await api('semaine', null, cercle.admin ? { admin: cercle.admin } : {});
+    if (donnees.nom && donnees.nom !== cercle.nom) { cercle.nom = donnees.nom; ecrire('cercle', cercle); }
+    nettoyer();
+    if (await appliquerHabitudes()) donnees = await api('semaine', null, cercle.admin ? { admin: cercle.admin } : {});
+  }
+
+  /* ================= Écrans ================= */
+  function afficher() {
+    if (!cercle) return ecranAccueil();
+    if (ecran === 'cle') return ecranCle();
+    if (!profil || ecran === 'profil') return ecranProfil();
+    if (ecran === 'cours') return ecranCours();
+    if (ecran === 'inviter') return ecranInviter();
+    return ecranSemaine();
+  }
+
+  function ecranAccueil() {
+    $app.innerHTML = `
+      <div class="entete"><div><h1>Corsia</h1><div class="sous">Qui vient au cours${NB}?</div></div></div>
+      <div class="pile">
+        <div class="carte">
+          <p>Pour rejoindre un cercle, ouvre le <strong>lien d’invitation</strong> qu’on t’a envoyé, ou scanne son QR code.</p>
+        </div>
+        <div class="carte">
+          <p>Tu veux lancer un nouveau cercle pour ton bassin${NB}?</p>
+          <label class="champ">Nom du cercle
+            <input type="text" id="nomCercle" maxlength="40" placeholder="Le bassin du jeudi" autocomplete="off">
+          </label>
+          <button class="btn plein" id="creer">Créer le cercle</button>
+        </div>
+      </div>`;
+    document.getElementById('creer').onclick = async (e) => {
+      e.target.disabled = true;
+      try {
+        const nom = document.getElementById('nomCercle').value.trim();
+        const r = await api('creer_cercle', { nom });
+        cercle = { c: r.c, admin: r.admin, nom };
+        ecrire('cercle', cercle);
+        ecran = 'cle';
+        afficher();
+      } catch (err) {
+        dire(err.statut === 403 ? 'La création d’un nouveau cercle demande la clé d’un cercle existant.' : err.message);
+        e.target.disabled = false;
+      }
+    };
+  }
+
+  function ecranCle() {
+    $app.innerHTML = `
+      <div class="entete"><div><h1>Corsia</h1><div class="sous">${esc(cercle.nom || 'Ton cercle')}</div></div></div>
+      <div class="pile">
+        <div class="carte">
+          <h2>Ton cercle est créé</h2>
+          <p>Voici ta <strong>clé d’administration</strong>. Elle te permet d’ajouter des cours et de valider ceux qu’on te propose.</p>
+          <div class="cle" id="laCle">${esc(cercle.admin)}</div>
+          <p class="doux">Range-la dans ton gestionnaire de mots de passe. Ne la partage pas${NB}: l’invitation, c’est un autre lien.</p>
+          <button class="btn" id="copier">Copier la clé</button>
+          <button class="btn plein" id="suite">C’est noté</button>
+        </div>
+      </div>`;
+    document.getElementById('copier').onclick = () => copier(cercle.admin, 'Clé copiée');
+    document.getElementById('suite').onclick = () => { ecran = 'semaine'; afficher(); };
+  }
+
+  function ecranProfil() {
+    const choix = { surnom: profil?.surnom || '', animal: profil?.animal || '' };
+    const premier = !profil;
+    $app.innerHTML = `
+      ${premier ? '<div class="entete"><div><h1>Corsia</h1><div class="sous">' + esc(cercle.nom || 'Bienvenue') + '</div></div></div>'
+                : '<div class="retour"><button id="retour">‹ Ma semaine</button></div>'}
+      <div class="pile">
+        <h2 class="titre-ecran">Choisis ton animal</h2>
+        <div class="grille-animaux" role="group" aria-label="Animaux">
+          ${ANIMAUX.map(([id, nom]) => `
+            <button class="animal" data-animal="${id}" aria-pressed="${choix.animal === id}">
+              <img src="animaux/${id}.png" alt=""><span>${nom}</span>
+            </button>`).join('')}
+        </div>
+        <label class="champ">Ton surnom dans le cercle
+          <input type="text" id="surnom" maxlength="20" value="${esc(choix.surnom)}" autocomplete="nickname" placeholder="Prénom ou petit nom">
+        </label>
+        <button class="btn plein" id="enregistrer">C’est moi</button>
+        <p class="pied">Illustrations${NB}: Microsoft Fluent Emoji (licence MIT) · capybara créé avec ChatGPT</p>
+      </div>`;
+    $app.querySelectorAll('.animal').forEach((b) => b.onclick = () => {
+      choix.animal = b.dataset.animal;
+      $app.querySelectorAll('.animal').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    });
+    const r = document.getElementById('retour'); if (r) r.onclick = () => { ecran = 'semaine'; afficher(); };
+    document.getElementById('enregistrer').onclick = async (e) => {
+      choix.surnom = document.getElementById('surnom').value.trim();
+      if (!choix.animal) return dire('Choisis d’abord un animal 🙂');
+      if (!choix.surnom) return dire('Indique un surnom');
+      e.target.disabled = true;
+      const ancien = profil;
+      profil = choix; ecrire('profil', profil);
+      // Mettre à jour les inscriptions déjà faites
+      if (ancien && (ancien.surnom !== profil.surnom || ancien.animal !== profil.animal)) {
+        for (const m of Object.values(miennes)) {
+          try { await api('modifier', { id: m.id, jeton: m.jeton, surnom: profil.surnom, animal: profil.animal }); } catch {}
+        }
+      }
+      ecran = premier ? 'cours' : 'semaine';
+      await rafraichir();
+    };
+  }
+
+  function ecranSemaine() {
+    const liste = seances();
+    const parId = new Map();
+    for (const i of donnees?.inscriptions || []) {
+      const k = cle(i.cours, i.date);
+      if (!parId.has(k)) parId.set(k, []);
+      parId.get(k).push(i);
+    }
+    const mesIds = new Set(Object.values(miennes).map((m) => m.id));
+    const pause = lire('pause', false);
+
+    const cartes = liste.map((s) => {
+      const inscrits = parId.get(s.cle) || [];
+      const moi = !!miennes[s.cle];
+      const habituel = habitudes.includes(s.cours.id);
+      const autres = inscrits.filter((i) => !mesIds.has(i.id));
+      const noms = [...(moi ? ['Toi'] : []), ...autres.map((i) => esc(i.surnom))];
+      const texteNoms = noms.length === 0 ? 'Personne du cercle pour l’instant'
+        : noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
+      const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
+
+      let action;
+      if (moi) {
+        action = `<div class="etat">✓ ${habituel ? `Tu y vas, comme chaque ${JOURS[s.cours.jour]}` : 'Tu y vas'}</div>
+                  <button class="btn discret" data-retirer="${s.cle}">Pas cette fois</button>`;
+      } else if (habituel && absences[s.cle]) {
+        action = `<div class="doux">Pas cette fois</div>
+                  <button class="btn" data-revenir="${s.cle}">Finalement, j’y vais</button>`;
+      } else {
+        action = `<button class="btn" data-venir="${s.cle}">${habituel ? 'J’y vais' : 'Je viens exceptionnellement'}</button>`;
+      }
+      return `
+        <article class="carte${moi ? ' mienne' : ''}">
+          <div><div class="quand">${dateFr(s.date)}</div>
+               <div class="quoi">${esc(s.cours.nom)} · ${heureFr(s.cours.heure)}</div></div>
+          <div class="qui">${pastilles}<span class="noms">${texteNoms}</span></div>
+          ${action}
+        </article>`;
+    }).join('');
+
+    const props = donnees?.propositions?.length ? `<div class="encadre"><strong>${donnees.propositions.length} cours proposé${donnees.propositions.length > 1 ? 's' : ''} à valider</strong>
+      <button class="btn" id="voirProps">Voir</button></div>` : '';
+
+    $app.innerHTML = `
+      <div class="entete">
+        <div><h1>Corsia</h1><div class="sous">${esc(cercle.nom || 'Ton cercle')}</div></div>
+        <button class="moi-btn" id="moi" aria-label="Mon animal et mon surnom">${pastille(profil.animal, true)}</button>
+      </div>
+      <div class="pile">
+        ${pause ? `<div class="encadre"><strong>Tu es hors de l’eau pour un moment.</strong>
+          <p class="doux">Corsia ne t’inscrit plus automatiquement. Tes habitudes sont gardées.</p>
+          <button class="btn plein" id="replonger">Je replonge</button></div>` : ''}
+        ${props}
+        <h2>Cette semaine</h2>
+        ${donnees?.cours?.length ? (cartes || '<div class="vide">Aucun cours dans les 7 prochains jours.</div>')
+          : `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Mes cours${NB}».` : ''}</div>`}
+        <div class="rangee">
+          <button class="btn discret" id="mesCours">Mes cours</button>
+          <button class="btn discret" id="inviter">Inviter</button>
+        </div>
+        ${!pause ? '<button class="lien" id="pause">Je sors de l’eau un moment</button>' : ''}
+      </div>`;
+
+    $app.querySelectorAll('[data-venir]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const s = liste.find((x) => x.cle === b.dataset.venir);
+      delete absences[s.cle]; ecrire('absences', absences);
+      await inscrire(s, habitudes.includes(s.cours.id) ? 'habitude' : 'ponctuel');
+    }));
+    $app.querySelectorAll('[data-revenir]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const s = liste.find((x) => x.cle === b.dataset.revenir);
+      delete absences[s.cle]; ecrire('absences', absences);
+      await inscrire(s, 'habitude');
+    }));
+    $app.querySelectorAll('[data-retirer]').forEach((b) => b.onclick = () => agir(b, async () => {
+      const k = b.dataset.retirer;
+      const coursId = k.split('|')[0];
+      if (habitudes.includes(coursId)) { absences[k] = true; ecrire('absences', absences); }
+      await retirer(k);
+    }));
+    document.getElementById('moi').onclick = () => { ecran = 'profil'; afficher(); };
+    document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
+    document.getElementById('inviter').onclick = () => { ecran = 'inviter'; afficher(); };
+    const vp = document.getElementById('voirProps'); if (vp) vp.onclick = () => { ecran = 'cours'; afficher(); };
+    const pz = document.getElementById('pause'); if (pz) pz.onclick = () => agir(pz, async () => {
+      ecrire('pause', true);
+      // On retire les inscriptions automatiques à venir ; les venues ponctuelles restent.
+      for (const [k, m] of Object.entries(miennes)) if (m.source === 'habitude') await retirer(k);
+    }, 'Bonne pause 🌊');
+    const rp = document.getElementById('replonger'); if (rp) rp.onclick = () => agir(rp, async () => {
+      oublier('pause');
+      await appliquerHabitudes();
+    }, 'Bon retour dans l’eau');
+  }
+
+  function ecranCours() {
+    const cours = donnees?.cours || [];
+    const props = donnees?.propositions || [];
+    const admin = !!cercle.admin;
+    const options = JOURS.slice(1).map((j, i) => `<option value="${i + 1}">${j[0].toUpperCase() + j.slice(1)}</option>`).join('');
+    $app.innerHTML = `
+      <div class="retour"><button id="retour">‹ Ma semaine</button></div>
+      <div class="pile">
+        <h2 class="titre-ecran">Mes cours</h2>
+        <p class="doux">Coche les cours où tu vas d’habitude. Corsia t’y inscrira chaque semaine${NB}; tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
+        <div class="carte">
+          ${cours.length ? cours.map((c) => `
+            <div class="ligne-cours">
+              <label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
+                <span>${esc(c.nom)} · ${JOURS[c.jour]} ${heureFr(c.heure)}</span></label>
+              ${admin ? `<button class="lien" data-supprimer="${c.id}" aria-label="Supprimer ${esc(c.nom)}">Retirer</button>` : ''}
+            </div>`).join('') : '<p class="doux">Aucun cours pour l’instant.</p>'}
+        </div>
+        ${admin && props.length ? `<h2>Propositions</h2><div class="carte">${props.map((c) => `
+            <div class="ligne-cours"><span>${esc(c.nom)} · ${JOURS[c.jour]} ${heureFr(c.heure)}</span>
+              <span class="rangee" style="flex:none"><button class="btn" data-accepter="${c.id}">Accepter</button>
+              <button class="btn discret" data-refuser="${c.id}">Refuser</button></span></div>`).join('')}</div>` : ''}
+        <h2>${admin ? 'Ajouter un cours' : 'Proposer un cours'}</h2>
+        <div class="carte">
+          <label class="champ">Nom du cours <input type="text" id="nomCours" maxlength="30" placeholder="Aqua, Apnée…"></label>
+          <div class="rangee">
+            <label class="champ" style="flex:1 1 140px">Jour <select id="jourCours">${options}</select></label>
+            <label class="champ" style="flex:1 1 120px">Heure <input type="time" id="heureCours" value="19:00"></label>
+          </div>
+          <button class="btn plein" id="ajouter">${admin ? 'Ajouter' : 'Proposer'}</button>
+          ${admin ? '' : '<p class="doux">La personne qui gère le cercle validera ta proposition.</p>'}
+        </div>
+      </div>`;
+
+    document.getElementById('retour').onclick = async () => { ecran = 'semaine'; await rafraichir(); };
+    $app.querySelectorAll('[data-habitude]').forEach((b) => b.onchange = () => agir(b, async () => {
+      const id = b.dataset.habitude;
+      if (b.checked) { if (!habitudes.includes(id)) habitudes.push(id); }
+      else {
+        habitudes = habitudes.filter((h) => h !== id);
+        for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|') && m.source === 'habitude') await retirer(k);
+      }
+      ecrire('habitudes', habitudes);
+    }, b.checked ? 'Noté, chaque semaine' : 'Habitude retirée', false));
+    $app.querySelectorAll('[data-supprimer]').forEach((b) => b.onclick = () => {
+      if (!confirm('Retirer ce cours du cercle${NB}? Les inscriptions à venir disparaîtront aussi.'.replace('${NB}', NB))) return;
+      agir(b, () => api('supprimer_cours', { admin: cercle.admin, cours: b.dataset.supprimer }), 'Cours retiré');
+    });
+    $app.querySelectorAll('[data-accepter]').forEach((b) => b.onclick = () =>
+      agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.accepter, accepte: true }), 'Cours ajouté'));
+    $app.querySelectorAll('[data-refuser]').forEach((b) => b.onclick = () =>
+      agir(b, () => api('valider', { admin: cercle.admin, cours: b.dataset.refuser, accepte: false }), 'Proposition retirée'));
+    document.getElementById('ajouter').onclick = (e) => {
+      const nom = document.getElementById('nomCours').value.trim();
+      if (!nom) return dire('Indique le nom du cours');
+      agir(e.target, () => api('proposer', { admin: cercle.admin, nom,
+        jour: Number(document.getElementById('jourCours').value), heure: document.getElementById('heureCours').value }),
+        admin ? 'Cours ajouté' : 'Proposition envoyée, merci${NB}!'.replace('${NB}', NB));
+    };
+  }
+
+  function ecranInviter() {
+    const lien = `${location.origin}${location.pathname}#c=${cercle.c}`;
+    $app.innerHTML = `
+      <div class="retour"><button id="retour">‹ Ma semaine</button></div>
+      <div class="pile">
+        <h2 class="titre-ecran">Inviter quelqu’un</h2>
+        <p>Envoie ce lien à une personne du bassin. En l’ouvrant, elle rejoint ton cercle${NB}: elle choisit son animal, et c’est tout.</p>
+        <div class="cle">${esc(lien)}</div>
+        <div class="rangee">
+          ${navigator.share ? '<button class="btn plein" id="partager">Partager</button>' : ''}
+          <button class="btn" id="copier">Copier le lien</button>
+        </div>
+        <p class="doux">Pas de numéro de téléphone, pas de groupe${NB}: juste ce lien.</p>
+      </div>`;
+    document.getElementById('retour').onclick = () => { ecran = 'semaine'; afficher(); };
+    document.getElementById('copier').onclick = () => copier(lien, 'Lien copié');
+    const p = document.getElementById('partager');
+    if (p) p.onclick = () => navigator.share({ title: 'Corsia', text: `Rejoins le cercle «${NB}${cercle.nom || 'Corsia'}${NB}» pour voir qui vient au cours`, url: lien }).catch(() => {});
+  }
+
+  /* ================= Actions ================= */
+  async function copier(texte, ok) {
+    try { await navigator.clipboard.writeText(texte); dire(ok); } catch { dire('Copie impossible : sélectionne le texte à la main.'); }
+  }
+
+  async function agir(bouton, fn, ok = null, retracer = true) {
+    bouton.disabled = true;
+    try {
+      await fn();
+      if (ok) dire(ok);
+      await rafraichir(retracer);
+    } catch (err) {
+      dire(err.message);
+      await rafraichir(retracer).catch(() => {});
+    } finally {
+      bouton.disabled = false;
+    }
+  }
+
+  async function rafraichir(retracer = true) {
+    if (cercle) {
+      try { await charger(); }
+      catch (err) {
+        if (err.statut === 404 && /Cercle/.test(err.message)) {
+          dire('Ce cercle n’existe plus.'); oublier('cercle'); cercle = null;
+        } else dire(err.message);
+      }
+    }
+    if (retracer) afficher();
+  }
+
+  /* ================= Démarrage ================= */
+  async function demarrer() {
+    const m = location.hash.match(/[#&]c=([0-9a-f]{18})/);
+    if (m) {
+      history.replaceState(null, '', location.pathname);
+      if (!cercle || cercle.c !== m[1]) {
+        if (!cercle || confirm('Rejoindre ce nouveau cercle à la place du tien' + NB + '?')) {
+          cercle = { c: m[1], nom: '' };
+          ecrire('cercle', cercle);
+          habitudes = []; miennes = {}; absences = {};
+          ecrire('habitudes', habitudes); ecrire('miennes', miennes); ecrire('absences', absences);
+        }
+      }
+    }
+    $app.innerHTML = '<div class="vide">Un instant…</div>';
+    await rafraichir();
+  }
+
+  // Rafraîchir quand on revient sur l'appli
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && cercle && profil && ecran === 'semaine') rafraichir();
+  });
+
+  demarrer();
+})();
+</script>
+</body>
+</html>
