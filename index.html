@@ -170,8 +170,8 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.14';
-  const FENETRE = 7;               // jours où Corsia t'inscrit selon tes habitudes
+  const VERSION = '3.15';
+  const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
 
@@ -274,15 +274,16 @@
     if (!donnees) return [];
     const liste = [];
     const maintenant = new Date();
-    for (let i = 0; i < FENETRE; i++) {
+    for (let i = 0; i <= FENETRE; i++) {
       const d = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate() + i);
       const date = iso(d);
       for (const c of donnees.cours) {
         if (!aLieu(c, date)) continue;
-        if (i === 0) {                                   // séance du jour terminée depuis plus d'1 h 30 : on la masque
-          const [h, m] = c.heure.split(':').map(Number);
-          if (maintenant - new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m) > 90 * 60e3) continue;
-        }
+        const [h, m] = c.heure.split(':').map(Number);
+        const debut = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m);
+        if (maintenant - debut > 90 * 60e3) continue;                   // terminée depuis plus d'1 h 30 : on la masque
+        const ouverture = new Date(debut); ouverture.setDate(ouverture.getDate() - FENETRE);
+        if (maintenant < ouverture) continue;                            // pas encore réservable au club
         liste.push({ cours: c, date, cle: cle(c.id, date), coupure: interruptionDe(c.id, date) });
       }
     }
@@ -333,7 +334,7 @@
     return change;
   }
 
-  // À chaque ouverture : inscription aux séances habituelles des 7 prochains jours.
+  // À chaque ouverture : présence aux séances habituelles déjà réservables au club.
   async function appliquerHabitudes() {
     if (!profil || lire('pause', false)) return false;
     let change = false;
@@ -650,7 +651,7 @@
     if (!donnees?.cours?.length) {
       corps = `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Les cours${NB}».` : ''}</div>`;
     } else if (!liste.length) {
-      corps = `<div class="vide">${filtre === 'miens' && toutes.length ? 'Aucun de tes cours dans les 7 prochains jours.' : 'Aucun cours dans les 7 prochains jours.'}</div>`;
+      corps = `<div class="vide">${filtre === 'miens' && toutes.length ? 'Aucun de tes cours dans les 9 prochains jours.' : 'Aucun cours dans les 9 prochains jours.'}</div>`;
     } else corps = cartes;
 
     $app.innerHTML = `
@@ -665,7 +666,7 @@
         ${lire('rappelCle', false) && !cercle.admin ? `<div class="encadre"><strong>Tu gères ce cercle</strong>
           <p>Sur cet appareil, colle ta clé de gestion (rangée dans ton gestionnaire de mots de passe) pour retrouver l’ajout et l’interruption des cours.</p>
           <div class="rangee"><button class="btn plein" id="collerCle">Coller ma clé</button><button class="btn discret" id="pasMaintenant">Pas maintenant</button></div></div>` : ''}
-        <h2>Cette semaine</h2>
+        <h2>Prochaines séances</h2>
         ${!habitudes.length && donnees?.cours?.length && !Object.keys(miennes).length ? `<div class="encadre">
           <strong>Choisis tes cours</strong>
           <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia te montrera au cercle chaque semaine. Pour une seule séance, touche «${NB}Cette fois${NB}».</p>
