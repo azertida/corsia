@@ -160,18 +160,19 @@
   const heureFr = (h) => h.replace(':', ' h ').replace(/ h 00$/, ' h');
   const cle = (cours, date) => `${cours}|${date}`;
   const aujourdhui = () => iso(new Date());
-  const dateCourte = (s) => new Intl.DateTimeFormat('fr-BE', { day: 'numeric', month: 'long' }).format(versDate(s));
-  const dateMoyenne = (s) => new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }).format(versDate(s));
+  const premier = (t) => t.replace(/(^|\s)1(\s)/, '$11er$2');   // « 1er décembre »
+  const dateCourte = (s) => premier(new Intl.DateTimeFormat('fr-BE', { day: 'numeric', month: 'long' }).format(versDate(s)));
+  const dateMoyenne = (s) => premier(new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }).format(versDate(s)));
 
   function dateFr(dateIso) {
     if (dateIso === aujourdhui()) return 'Aujourd’hui';
     if (dateIso === iso(new Date(Date.now() + 864e5))) return 'Demain';
-    return new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'short' }).format(versDate(dateIso));
+    return premier(new Intl.DateTimeFormat('fr-BE', { weekday: 'long', day: 'numeric', month: 'short' }).format(versDate(dateIso)));
   }
 
   function rythmeFr(c) {
     if (c.rythme === 0) return `${dateMoyenne(c.ref)}, ${heureFr(c.heure)} · séance unique`;
-    if (c.rythme === 2) return `${JOURS[c.jour]} ${heureFr(c.heure)} · une semaine sur deux`;
+    if (c.rythme === 2) return `${JOURS[c.jour]} ${heureFr(c.heure)} · une semaine sur deux${c.ref > aujourdhui() ? `, à partir du ${dateCourte(c.ref)}` : ''}`;
     return `chaque ${JOURS[c.jour]}, ${heureFr(c.heure)}`;
   }
 
@@ -209,7 +210,7 @@
   function aLieu(c, date) {
     if (c.rythme === 0) return date === c.ref;
     if (jourIso(versDate(date)) !== c.jour) return false;
-    if (c.rythme === 2 && c.ref) return ((ecartJours(c.ref, date) % 14) + 14) % 14 === 0;
+    if (c.rythme === 2 && c.ref) return date >= c.ref && ecartJours(c.ref, date) % 14 === 0;   // rien avant la première séance
     return true;
   }
 
@@ -405,7 +406,7 @@
     const liste = filtre === 'miens' ? toutes.filter(estMien) : toutes;
     const cachees = toutes.length - liste.length;
 
-    const emoji = (r) => { const x = REACTIONS.find((y) => y[0] === r); return x ? `${NB}${x[1]}` : ''; };
+    const emoji = (r) => { const t = REACTIONS.filter((y) => (r || '').split(',').includes(y[0])).map((y) => y[1]).join(''); return t ? NB + t : ''; };
 
     const cartes = liste.map((s) => {
       const c = s.cours;
@@ -431,10 +432,10 @@
 
       let action;
       if (moi) {
-        const actuelle = reactionDe.get(moi.id) || '';
+        const actuelles = (reactionDe.get(moi.id) || '').split(',');
         action = `<div class="etat">✓ ${habituel ? `Tu y vas, comme chaque ${JOURS[c.jour]}` : 'Tu y vas'}</div>
           <div class="reactions" role="group" aria-label="Un petit mot${NB}? (facultatif)">
-            ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelle === id}">${e} ${t}</button>`).join('')}
+            ${REACTIONS.map(([id, e, t]) => `<button class="reaction" data-reagir="${s.cle}" data-r="${id}" aria-pressed="${actuelles.includes(id)}">${e} ${t}</button>`).join('')}
           </div>
           <button class="btn discret" data-retirer="${s.cle}">Pas cette fois</button>`;
       } else if (habituel && absences[s.cle]) {
@@ -457,7 +458,7 @@
 
     let corps;
     if (!donnees?.cours?.length) {
-      corps = `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Mes cours${NB}».` : ''}</div>`;
+      corps = `<div class="vide">Aucun cours dans ce cercle pour l’instant.<br>${cercle.admin ? `Ajoute le premier dans «${NB}Les cours${NB}».` : ''}</div>`;
     } else if (!liste.length) {
       corps = `<div class="vide">${filtre === 'miens' && toutes.length ? 'Aucun de tes cours dans les 7 prochains jours.' : 'Aucun cours dans les 7 prochains jours.'}</div>`;
     } else corps = cartes;
@@ -480,7 +481,7 @@
         ${corps}
         ${filtre === 'miens' && cachees ? `<p class="doux" style="text-align:center">${cachees} autre${cachees > 1 ? 's' : ''} séance${cachees > 1 ? 's' : ''} dans «${NB}Tous les cours${NB}»</p>` : ''}
         <div class="rangee">
-          <button class="btn discret" id="mesCours">Mes cours</button>
+          <button class="btn discret" id="mesCours">Les cours</button>
           <button class="btn discret" id="inviter">Inviter</button>
         </div>
         ${!pause ? `<button class="btn discret pause" id="pause">
@@ -507,8 +508,12 @@
     }));
     $app.querySelectorAll('[data-reagir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const m = miennes[b.dataset.reagir];
-      const deja = b.getAttribute('aria-pressed') === 'true';
-      await api('modifier', { id: m.id, jeton: m.jeton, reaction: deja ? '' : b.dataset.r });
+      const r = b.dataset.r;
+      let liste = [...b.parentElement.querySelectorAll('[aria-pressed="true"]')].map((x) => x.dataset.r);
+      if (liste.includes(r)) liste = liste.filter((x) => x !== r);          // second appui : on retire
+      else if (r === 'peutetre') liste = ['peutetre'];                        // « peut-être pas » reste seule
+      else liste = [...liste.filter((x) => x !== 'peutetre'), r];             // « hâte » et « retard » se cumulent
+      await api('modifier', { id: m.id, jeton: m.jeton, reaction: liste.join(',') });
     }));
     document.getElementById('moi').onclick = () => { ecran = 'profil'; afficher(); };
     document.getElementById('mesCours').onclick = () => { ecran = 'cours'; afficher(); };
@@ -537,7 +542,7 @@
             <option value="0">Séance unique</option>
           </select></label>
         <label class="champ" id="champJour">Jour <select id="jourCours">${options}</select></label>
-        <label class="champ" id="champRef" hidden><span id="libRef">Date d’une séance</span> <input type="date" id="refCours" min="${aujourdhui()}"></label>
+        <label class="champ" id="champRef" hidden><span id="libRef">Date de la prochaine séance</span> <input type="date" id="refCours" min="${aujourdhui()}"></label>
         <label class="champ">Heure <input type="time" id="heureCours" value="19:00"></label>
         <button class="btn plein" id="ajouter">${admin ? 'Ajouter' : 'Proposer'}</button>
         ${admin ? '' : '<p class="doux">La personne qui gère le cercle validera ta proposition.</p>'}
@@ -550,7 +555,7 @@
       const r = rythme.value;
       document.getElementById('champJour').hidden = r !== '1';
       document.getElementById('champRef').hidden = r === '1';
-      document.getElementById('libRef').textContent = r === '0' ? 'Date' : 'Date d’une séance (la prochaine, par exemple)';
+      document.getElementById('libRef').textContent = r === '0' ? 'Date' : 'Date de la prochaine séance';
     };
     rythme.onchange = maj; maj();
     document.getElementById('ajouter').onclick = (e) => {
@@ -580,6 +585,18 @@
       </div>`;
   }
 
+  function prochaineFr(c) {
+    const d0 = new Date();
+    for (let i = 0; i < 400; i++) {
+      const date = iso(new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() + i));
+      if (c.rythme === 0 && date > c.ref) break;
+      if (aLieu(c, date) && !interruptionDe(c.id, date)) {
+        return `Prochaine séance${NB}: ${date === aujourdhui() ? 'aujourd’hui' : dateMoyenne(date)}`;
+      }
+    }
+    return 'Pas de séance prévue';
+  }
+
   function periodeFr(i) {
     return i.du === i.au ? `le ${dateMoyenne(i.du)}` : `du ${dateCourte(i.du)} au ${dateCourte(i.au)}`;
   }
@@ -595,8 +612,8 @@
     $app.innerHTML = `
       <div class="retour"><button id="retour">‹ Ma semaine</button></div>
       <div class="pile">
-        <h2 class="titre-ecran">Mes cours</h2>
-        <p class="doux">Coche les cours où tu vas d’habitude. Corsia t’y inscrira${NB}; tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
+        <h2 class="titre-ecran">Les cours</h2>
+        <p class="doux">Tous les cours du cercle. Coche ceux où tu vas d’habitude${NB}: Corsia t’y inscrira, et tu pourras toujours dire «${NB}pas cette fois${NB}».</p>
         <div class="carte">
           ${cours.length ? cours.map((c) => `
             <div class="bloc-cours">
@@ -604,6 +621,7 @@
                 ? `<div><div class="titre">${esc(c.nom)}</div><div class="detail">${rythmeFr(c)}</div></div>`
                 : `<label class="coche"><input type="checkbox" data-habitude="${c.id}" ${habitudes.includes(c.id) ? 'checked' : ''}>
                     <span>${esc(c.nom)}<br><span class="detail" style="font-weight:400">${rythmeFr(c)}</span></span></label>`}
+              <div class="detail">${prochaineFr(c)}</div>
               ${inter.filter((i) => i.cours === c.id).map(ligneCoupure).join('')}
               ${admin ? `<div class="outils">
                   ${c.rythme !== 0 ? `<button class="lien" data-ouvrir="${c.id}">Interrompre</button>` : ''}
@@ -672,7 +690,7 @@
 
   function ecranGerer() {
     $app.innerHTML = `
-      <div class="retour"><button id="retour">‹ Mes cours</button></div>
+      <div class="retour"><button id="retour">‹ Les cours</button></div>
       <div class="pile">
         <h2 class="titre-ecran">Je gère ce cercle</h2>
         <p>Colle ici la <strong>clé de gestion</strong> que tu as reçue en créant le cercle. Tu la retrouves dans ton gestionnaire de mots de passe.</p>

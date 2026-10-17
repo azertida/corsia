@@ -14,21 +14,21 @@ On partage sa présence, pas sa vie :
 ## Comment ça marche
 
 - **Un cercle** se rejoint par un lien d'invitation qui contient son code. Sans ce code, on ne voit rien.
-- **Mes cours** : chacun coche les cours où il va d'habitude. À chaque ouverture, Corsia l'inscrit aux séances correspondantes des 7 prochains jours.
+- **Les cours** : chacun coche les cours où il va d'habitude. À chaque ouverture, Corsia l'inscrit aux séances correspondantes des 7 prochains jours.
 - **Pas cette fois** : on se retire d'une séance sans toucher à ses habitudes.
 - **Je viens exceptionnellement** : on s'inscrit à une séance hors de ses habitudes.
 - **Je sors de l'eau un moment** : une pause. Corsia arrête les inscriptions automatiques et garde les habitudes pour le retour (« Je replonge »).
-- **Réactions** : sur une séance où l'on va, un petit mot facultatif (🙌 J'ai hâte, ⏰ Un peu en retard, 🤷 Peut-être pas).
+- **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).
 - **Mes cours / Tous les cours** : l'écran de la semaine montre par défaut ses propres cours.
 - **Propositions** : tout le monde peut proposer un cours. La personne qui gère le cercle le valide.
 
 ### Pour la personne qui gère le cercle
 
-- **Rythme d'un cours** : chaque semaine, une semaine sur deux (à partir d'une date de séance), ou séance unique (un cours spécial, qui disparaît après sa date).
+- **Rythme d'un cours** : chaque semaine, une semaine sur deux (à partir de la date de la prochaine séance : rien n'apparaît avant), ou séance unique (un cours spécial, qui disparaît après sa date).
 - **Interrompre un cours** : un jour ou une période (vacances d'un·e prof…). Les séances apparaissent barrées, « Pas de cours ».
 - **Fermetures du club** : un jour ou une période où tous les cours sont supprimés (« Club fermé »).
 - Dans les deux cas, les inscriptions déjà faites sur ces séances sont retirées ; les habitudes restent et reprennent d'elles-mêmes.
-- **Clé de gestion** : remise une seule fois à la création du cercle. Le serveur n'en garde qu'une empreinte : elle ne peut pas être retrouvée. Sur un autre appareil, « Mes cours › Je gère ce cercle » permet de la saisir.
+- **Clé de gestion** : remise une seule fois à la création du cercle. Le serveur n'en garde qu'une empreinte : elle ne peut pas être retrouvée. Sur un autre appareil, « Les cours › Je gère ce cercle » permet de la saisir.
 
 ## Données
 
