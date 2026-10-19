@@ -23,7 +23,7 @@ On partage sa présence, pas sa vie :
     - **Un petit mot ?** (les réactions), quand on y va.
 - **Je sors de l'eau un moment** : une pause. Le cercle ne voit plus la personne aux séances de ses habitudes (celles annoncées « cette fois » restent) ; les habitudes sont gardées pour le retour (« Je replonge »).
 - **Réactions** : sur une séance où l'on va, un petit mot facultatif : 🙌 J'ai hâte et ⏰ Un peu en retard (cumulables), ou 🤷 Peut-être pas (seule).
-- **Mes cours / Tous les cours** : l'écran de la semaine montre par défaut ses propres cours.
+- **Mes cours / Tous les cours** : l'écran montre par défaut ses propres cours. « Tous les cours » se parcourt jour par jour, avec une rangée de jours ; la bascule et les jours restent accrochés en haut de l'écran.
 - **Inviter** : un lien à partager, ou un QR code à faire scanner sur place.
 - **Installer Corsia** : proposé une fois, à la deuxième ouverture, avec les gestes pour iPhone et Android ; toujours accessible en bas de la semaine.
 - **Lien de secours** (dans son profil) : contient le cercle, le surnom, l'animal et les habitudes — jamais la clé de gestion. Il restaure tout sur un appareil qui a oublié, et sert de pont vers l'appli installée sur iPhone (où Safari et l'appli installée ne partagent pas leurs données).

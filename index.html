@@ -83,6 +83,16 @@
   .choix .btn { padding: 0 6px; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 44px; padding: 0 6px; display: inline-flex; align-items: center; gap: 8px; }
 
+  .collant { position: sticky; top: env(safe-area-inset-top); z-index: 5; background: var(--creme);
+             margin: 0 -16px; padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .jours { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .jours::-webkit-scrollbar { display: none; }
+  .jours button { flex: none; min-width: 58px; min-height: 54px; padding: 4px 8px; border-radius: 12px; border: 1.5px solid var(--bord-fort);
+                  background: var(--carte); color: var(--encre); font-weight: 700; font-size: 15px; line-height: 1.15;
+                  display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .jours button small { font-weight: 400; font-size: 13px; color: var(--doux); }
+  .jours button[aria-pressed="true"] { background: var(--bleu); border-color: var(--bleu); color: #fff; }
+  .jours button[aria-pressed="true"] small { color: #fff; }
   .bascule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--sable); border-radius: 14px; padding: 4px; }
   .bascule button { min-height: 44px; border: none; border-radius: 11px; background: transparent; font-weight: 700; font-size: 16px; }
   .bascule button[aria-pressed="true"] { background: var(--bleu); color: #fff; }
@@ -174,7 +184,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.16';
+  const VERSION = '3.20';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -203,6 +213,7 @@
   let absences = lire('absences', {});        // { "idCours|date": true } = « pas cette fois »
   let donnees = null;                         // réponse du serveur
   let ecran = 'semaine';
+  let jourVu = null;   // jour affiché dans « Tous les cours »
   let ouvert = null;                          // formulaire d'interruption ouvert (id du cours, ou 'club')
 
   /* ================= Outils ================= */
@@ -587,8 +598,19 @@
     // Filtre « Mes cours / Tous les cours » : par défaut, mes cours si j'ai des habitudes.
     let filtre = lire('filtre', null) || (habitudes.length ? 'miens' : 'tous');
     const estMien = (s) => habitudes.includes(s.cours.id) || !!miennes[s.cle];
-    const liste = filtre === 'miens' ? toutes.filter(estMien) : toutes;
-    const cachees = toutes.length - liste.length;
+    // « Tous les cours » : un jour à la fois.
+    const jours = [...new Set(toutes.map((s) => s.date))];
+    if (!jours.includes(jourVu)) jourVu = jours[0] || null;
+    const liste = filtre === 'miens' ? toutes.filter(estMien) : toutes.filter((s) => s.date === jourVu);
+    const cachees = toutes.filter((s) => !estMien(s)).length;
+    const demain = iso(new Date(Date.now() + 864e5));
+    const ABR = ['', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
+    const bandeJours = filtre !== 'tous' || jours.length < 2 ? '' : `<div class="jours" role="group" aria-label="Jour affiché">
+        ${jours.map((d) => {
+          const haut = d === aujourdhui() ? 'Auj.' : d === demain ? 'Dem.' : ABR[jourIso(versDate(d))];
+          return `<button data-jour="${d}" aria-pressed="${d === jourVu}">${haut}<small>${Number(d.slice(8))}</small></button>`;
+        }).join('')}
+      </div>`;
 
     const emoji = (r) => { const t = REACTIONS.filter((y) => (r || '').split(',').includes(y[0])).map((y) => y[1]).join(''); return t ? NB + t : ''; };
 
@@ -682,9 +704,13 @@
           <strong>Choisis tes cours</strong>
           <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia te montrera au cercle chaque semaine. Pour une seule séance, touche «${NB}Cette fois${NB}».</p>
           <p class="doux">Corsia ne réserve rien au club${NB}: elle montre seulement au cercle qui y va.</p></div>` : ''}
-        <div class="bascule" role="group" aria-label="Cours affichés">
-          <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
-          <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
+        <div id="ancreListe"></div>
+        <div class="collant">
+          <div class="bascule" role="group" aria-label="Cours affichés">
+            <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
+            <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
+          </div>
+          ${bandeJours}
         </div>
         ${corps}
         ${filtre === 'miens' && cachees ? `<p class="doux" style="text-align:center">${cachees} autre${cachees > 1 ? 's' : ''} séance${cachees > 1 ? 's' : ''} dans «${NB}Tous les cours${NB}»</p>` : ''}
@@ -693,7 +719,7 @@
           <button class="btn discret" id="inviter">Inviter</button>
         </div>
         ${!pause ? `<button class="btn discret pause" id="pause">
-          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M12 3v7m-3-3 3 3 3-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M12 10V3M9 6l3-3 3 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Je sors de l’eau un moment</button>
         <p class="doux" style="text-align:center;margin-top:-6px">Une pause, sans que personne ne le remarque.</p>` : ''}
         <div class="liens-bas">
@@ -702,7 +728,15 @@
         </div>
       </div>`;
 
-    $app.querySelectorAll('[data-filtre]').forEach((b) => b.onclick = () => { ecrire('filtre', b.dataset.filtre); afficher(); });
+    // Changer de vue ou de jour : on remonte en haut de la liste si on était descendu plus bas.
+    const remonter = () => {
+      const a = document.getElementById('ancreListe'); if (!a) return;
+      const haut = a.getBoundingClientRect().top + window.scrollY - 8;
+      if (window.scrollY > haut) window.scrollTo(0, haut);
+    };
+    $app.querySelectorAll('[data-filtre]').forEach((b) => b.onclick = () => { ecrire('filtre', b.dataset.filtre); afficher(); remonter(); });
+    $app.querySelectorAll('[data-jour]').forEach((b) => b.onclick = () => { jourVu = b.dataset.jour; afficher(); remonter(); });
+    const choisi = $app.querySelector('.jours [aria-pressed="true"]'); if (choisi) choisi.scrollIntoView({ inline: 'nearest', block: 'nearest' });
     $app.querySelectorAll('[data-venir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const s = toutes.find((x) => x.cle === b.dataset.venir);
       delete absences[s.cle]; ecrire('absences', absences);
