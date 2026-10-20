@@ -21,7 +21,7 @@
   @font-face { font-family: 'Atkinson Hyperlegible'; font-weight: 700; font-display: swap; src: url('polices/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2'); }
   :root {
     --creme: #FBF5EA; --carte: #FFFDF8; --bord: #E8DCC4; --bord-fort: #D9CBB0;
-    --encre: #2B2118; --doux: #5E5040; --ocre: #8F5A1B; --bleu: #1F4E6B; --bleu-pale: #E3EEF4;
+    --encre: #2B2118; --doux: #5E5040; --ocre: #8F5A1B; --bleu: #1F4E6B; --bleu-pale: #E3EEF4; --violet: #6B3FA0;
     --sable: #F1E6D3; --rouge: #9B2C1F;
   }
   * { box-sizing: border-box; }
@@ -109,8 +109,10 @@
   .interrupteur[aria-checked="true"] .piste::after { transform: translateX(20px); }
   .case { display: flex; align-items: center; gap: 12px; min-height: 44px; font-weight: 700; font-size: 16px; }
   .case input { width: 24px; height: 24px; flex: none; accent-color: var(--bleu); margin: 0; }
+  .case .a-faire { color: var(--violet); }
+  .case input:not(:checked) { accent-color: var(--violet); outline: 2px solid var(--violet); outline-offset: -2px; border-radius: 4px; }
   .case .detail { display: block; font-weight: 400; font-size: 14px; color: var(--doux); }
-  .a-reserver { color: var(--ocre); font-weight: 700; text-transform: none; letter-spacing: 0; }
+  .a-reserver { color: var(--violet); font-weight: 700; text-transform: none; letter-spacing: 0; }
   .interrupteur .detail { display: block; font-weight: 400; font-size: 14px; color: var(--doux); }
   .reaction { min-height: 44px; padding: 0 12px; border-radius: 22px; border: 1.5px solid var(--bord-fort); background: var(--carte); font-weight: 700; font-size: 15px; }
   .reaction[aria-pressed="true"] { border: 2px solid var(--bleu); background: var(--bleu-pale); color: var(--bleu); }
@@ -184,7 +186,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.20';
+  const VERSION = '3.21';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -658,7 +660,7 @@
             </div></div>`;
         }
         const resa = moi ? `<label class="case"><input type="checkbox" data-reserve="${s.cle}" ${reserves[s.cle] ? 'checked' : ''}>
-            <span>Réservé au club<span class="detail">Rien que pour toi${NB}: le cercle ne le voit pas</span></span></label>` : '';
+            <span>${reserves[s.cle] ? 'Cours réservé au club' : `<span class="a-faire">Le cours est réservé au club${NB}?</span>`}<span class="detail">Rien que pour toi${NB}: le cercle ne le voit pas</span></span></label>` : '';
         action = `<div class="reglages">${seance}${resa}${habitude}${mot}</div>`;
       } else if (c.rythme === 0) {
         action = `<button class="btn" data-venir="${s.cle}">J’y vais</button>`;

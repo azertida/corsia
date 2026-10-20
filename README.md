@@ -18,7 +18,7 @@ On partage sa présence, pas sa vie :
   - pour entrer : **Cette fois** (une seule séance) ou **Chaque jeudi** (« Un vendredi sur deux ») ;
   - ensuite, trois réglages qui montrent chacun leur état :
     - **J'y vais | Pas cette fois** pour cette séance ;
-    - une case **Réservé au club**, repère privé qui reste sur le téléphone (le cercle ne le voit pas) ; tant qu'elle n'est pas cochée, la carte affiche « à réserver » ;
+    - une case **Cours réservé au club** (en violet « Le cours est réservé au club ? » tant qu'elle n'est pas cochée), repère privé qui reste sur le téléphone (le cercle ne le voit pas) ; tant qu'elle n'est pas cochée, la carte affiche « à réserver » ;
     - un interrupteur **Chaque jeudi** pour l'habitude : allumé, Corsia montre au cercle sa présence aux séances correspondantes dès qu'elles sont réservables au club, 9 jours à l'avance (Corsia ne réserve rien au club) ; éteint, une séance déjà prévue le reste ;
     - **Un petit mot ?** (les réactions), quand on y va.
 - **Je sors de l'eau un moment** : une pause. Le cercle ne voit plus la personne aux séances de ses habitudes (celles annoncées « cette fois » restent) ; les habitudes sont gardées pour le retour (« Je replonge »).
