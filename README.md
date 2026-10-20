@@ -37,6 +37,7 @@ On partage sa présence, pas sa vie :
 - **Interrompre un cours** : un jour ou une période (vacances d'un·e prof…). Les séances apparaissent barrées, « Pas de cours ».
 - **Fermetures du club** : un jour ou une période où tous les cours sont supprimés (« Club fermé »).
 - Dans les deux cas, les inscriptions déjà faites sur ces séances sont retirées ; les habitudes restent et reprennent d'elles-mêmes.
+- **Nom du cercle** : modifiable en bas de « Les cours » ; il s'affiche sous « Corsia » chez tous les membres.
 - **Clé de gestion** : remise une seule fois à la création du cercle. Le serveur n'en garde qu'une empreinte : elle ne peut pas être retrouvée. Sur un autre appareil, « Mon profil › Je gère ce cercle » (tout en bas) permet de la saisir.
 
 ## Données
@@ -73,6 +74,7 @@ Ce dépôt contient une copie de `serveur/api.php` pour garder son historique. G
 | `inscrire`, `modifier`, `retirer` | membres (jeton) | gérer sa présence à une séance |
 | `proposer` | administration (ajout direct) — l'appli ne propose plus cette action aux membres | ajouter un cours |
 | `valider`, `supprimer_cours` | administration | gérer les cours (`valider` n'est plus utilisé par l'appli) |
+| `renommer` | administration | changer le nom du cercle (affiché sous « Corsia ») |
 | `interrompre`, `annuler_interruption` | administration | interrompre un cours ou fermer le club, du … au … |
 
 ## Mise à jour

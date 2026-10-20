@@ -186,7 +186,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.21';
+  const VERSION = '3.22';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -928,11 +928,24 @@
         <h2>Ajouter un cours</h2>
         ${formulaireCours(true)}
 
+        ${admin ? `<h2>Nom du cercle</h2>
+        <div class="formulaire">
+          <p class="doux">Il s’affiche sous «${NB}Corsia${NB}», chez tous les membres.</p>
+          <label class="champ">Nom <input type="text" id="nomCercleModif" maxlength="40" value="${esc(cercle.nom || '')}" autocomplete="off"></label>
+          <button class="btn" id="renommer">Renommer</button>
+        </div>` : ''}
+
         <button class="lien" id="voirCle" style="align-self:center">Afficher ma clé de gestion</button>
         <p class="pied">Corsia · version ${VERSION}</p>
       </div>`;
 
     document.getElementById('retour').onclick = async () => { ecran = 'semaine'; ouvert = null; await rafraichir(); };
+    const rn = document.getElementById('renommer');
+    if (rn) rn.onclick = () => {
+      const nom = document.getElementById('nomCercleModif').value.trim();
+      if (!nom) return dire('Choisis un nom.');
+      agir(rn, async () => { await api('renommer', { admin: cercle.admin, nom }); cercle.nom = nom; ecrire('cercle', cercle); }, 'Cercle renommé');
+    };
     $app.querySelectorAll('[data-ouvrir]').forEach((b) => b.onclick = () => { ouvert = b.dataset.ouvrir; afficher(); });
     const vc = document.getElementById('validerCoupure');
     if (vc) vc.onclick = () => {
