@@ -407,6 +407,15 @@ try {
             $db->prepare('DELETE FROM cours WHERE id = ?')->execute([$c['id']]);
             repondre(['ok' => true]);
 
+        /* ----- Renommer le cercle (gestion) ----- */
+        case 'renommer':
+            if ($methode !== 'POST') erreur('POST attendu', 405);
+            exiger_admin($cer, $entree);
+            $nom = texte($entree['nom'] ?? '', 40);
+            if ($nom === '') erreur('Nom du cercle manquant');
+            $db->prepare('UPDATE cercles SET nom = ? WHERE code = ?')->execute([$nom, $code]);
+            repondre(['ok' => true]);
+
         /* ----- Interrompre un cours, ou fermer le club (sans cours), du … au … (gestion) ----- */
         case 'interrompre':
             if ($methode !== 'POST') erreur('POST attendu', 405);
