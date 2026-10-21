@@ -47,6 +47,7 @@ On partage sa présence, pas sa vie :
 | Le téléphone | code du cercle, surnom, animal, habitudes, jetons de ses inscriptions, repères « Réservé au club » | jusqu'à ce qu'on les efface |
 | Le serveur | liste des cours et des interruptions ; pour chaque séance à venir : surnom, animal, réaction | inscriptions et interruptions effacées une fois passées ; séances uniques aussi |
 
+- **On ne voit qui va à une séance que si l'on y va soi-même.** Le serveur n'envoie les surnoms et animaux que pour les séances où la personne qui demande est annoncée (elle le prouve avec les jetons de ses présences) ; pour les autres, seulement un nombre. Personne ne peut reconstituer l'emploi du temps d'un autre membre, pas même la personne qui gère le cercle.
 - Une même personne (même surnom, même animal) n'apparaît qu'**une fois par séance** : en cas de réinstallation ou de deuxième appareil, la nouvelle inscription remplace l'ancienne.
 - Chaque inscription porte un **jeton** que seul le téléphone qui l'a créée connaît. Le serveur n'en garde qu'une empreinte et ne relie pas les inscriptions entre elles d'une semaine à l'autre.
 - Le script du serveur n'enregistre ni adresse IP ni autre trace. L'hébergeur tient, comme tout hébergeur, ses propres journaux techniques.
@@ -70,7 +71,8 @@ Ce dépôt contient une copie de `serveur/api.php` pour garder son historique. G
 | Action | Qui | Rôle |
 |---|---|---|
 | `creer_cercle` | libre pour le premier cercle, ensuite clé d'administration requise | crée un cercle |
-| `semaine` | membres | cours, interruptions et inscriptions des 14 prochains jours (avec la clé : propositions en plus) |
+| `semaine` | membres (avec les jetons de leurs présences) | cours, interruptions, nombre de présences par séance, et noms seulement pour les séances où la personne est annoncée, sur 14 jours (avec la clé : propositions en plus) |
+| `surnom_pris` | membres | ce surnom avec cet animal est-il déjà utilisé ? (oui ou non) |
 | `inscrire`, `modifier`, `retirer` | membres (jeton) | gérer sa présence à une séance |
 | `proposer` | administration (ajout direct) — l'appli ne propose plus cette action aux membres | ajouter un cours |
 | `valider`, `supprimer_cours` | administration | gérer les cours (`valider` n'est plus utilisé par l'appli) |

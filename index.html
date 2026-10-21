@@ -186,7 +186,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.22';
+  const VERSION = '3.23';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -338,23 +338,6 @@
     if (reserves[k]) { delete reserves[k]; ecrire('reserves', reserves); }
   }
 
-  // Une inscription faite sous mon surnom et mon animal, mais dont ce téléphone n'a pas le jeton
-  // (réinstallation, lien de secours, autre appareil) : je la reprends. Le serveur remplace l'ancienne
-  // et garde sa réaction.
-  async function reprendreLesMiennes() {
-    if (!profil || !donnees) return false;
-    const moi = (i) => i.surnom.toLowerCase() === profil.surnom.toLowerCase() && i.animal === profil.animal;
-    let change = false;
-    for (const s of seances()) {
-      if (s.coupure || miennes[s.cle]) continue;
-      if (donnees.inscriptions.some((i) => i.cours === s.cours.id && i.date === s.date && moi(i))) {
-        try { await inscrire(s, habitudes.includes(s.cours.id) ? 'habitude' : 'ponctuel'); delete absences[s.cle]; change = true; } catch {}
-      }
-    }
-    if (change) ecrire('absences', absences);
-    return change;
-  }
-
   // À chaque ouverture : présence aux séances habituelles déjà réservables au club.
   async function appliquerHabitudes() {
     if (!profil || lire('pause', false)) return false;
@@ -368,13 +351,24 @@
     return change;
   }
 
+  // Le serveur ne donne les noms que pour les séances où je suis annoncée : je lui montre mes jetons.
+  // Pour les autres, il ne donne qu'un nombre.
+  const lireSemaine = () => api('semaine', {
+    ...(cercle.admin ? { admin: cercle.admin } : {}),
+    miens: Object.values(miennes).map((m) => ({ id: m.id, jeton: m.jeton })),
+  });
+
+  // Nombre de membres annoncés à une séance (avec un ancien serveur, on compte nous-mêmes).
+  function nombreA(k) {
+    if (donnees?.comptes) return donnees.comptes[k] || 0;
+    return (donnees?.inscriptions || []).filter((i) => cle(i.cours, i.date) === k).length;
+  }
+
   async function charger() {
-    const params = cercle.admin ? { admin: cercle.admin } : {};
-    donnees = await api('semaine', null, params);
+    donnees = await lireSemaine();
     if (donnees.nom && donnees.nom !== cercle.nom) { cercle.nom = donnees.nom; ecrire('cercle', cercle); }
     nettoyer();
-    const repris = await reprendreLesMiennes();
-    if (await appliquerHabitudes() || repris) donnees = await api('semaine', null, params);
+    if (await appliquerHabitudes()) donnees = await lireSemaine();
   }
 
   /* ---------- Lien personnel : cercle, surnom, animal et habitudes (jamais la clé de gestion) ---------- */
@@ -566,10 +560,16 @@
       choix.surnom = document.getElementById('surnom').value.trim();
       if (!choix.animal) return dire('Choisis d’abord un animal 🙂');
       if (!choix.surnom) return dire('Indique un surnom');
-      // Même surnom et même animal déjà utilisés par une autre inscription à venir ?
-      const mesIds = new Set(Object.values(miennes).map((m) => m.id));
-      const pris = (donnees?.inscriptions || []).some((i) => !mesIds.has(i.id)
-        && i.animal === choix.animal && i.surnom.trim().toLowerCase() === choix.surnom.toLowerCase());
+      // Même surnom et même animal déjà utilisés par quelqu'un d'autre ? Le serveur répond oui ou non.
+      const mesIds = Object.values(miennes).map((m) => m.id);
+      let pris = false;
+      if (!confirme) {
+        try { pris = (await api('surnom_pris', { surnom: choix.surnom, animal: choix.animal, exclus: mesIds })).pris; }
+        catch {   // ancien serveur : on regarde la liste reçue
+          pris = (donnees?.inscriptions || []).some((i) => !mesIds.includes(i.id)
+            && i.animal === choix.animal && i.surnom.trim().toLowerCase() === choix.surnom.toLowerCase());
+        }
+      }
       if (pris && !confirme) { alerte.hidden = false; alerte.scrollIntoView({ block: 'center', behavior: 'smooth' }); return; }
       e.target.disabled = true;
       const ancien = profil;
@@ -629,15 +629,20 @@
           : `Pas de cours jusqu’au ${dateCourte(i.au)}`;
         return `<article class="carte annulee">${entete}<span class="mention">${texte}</span></article>`;
       }
-      const inscrits = parCle.get(s.cle) || [];
       const moi = miennes[s.cle];
       const habituel = habitudes.includes(c.id);
-      const autres = inscrits.filter((i) => !mesIds.has(i.id));
-      const noms = [...(moi ? ['Toi' + emoji(reactionDe.get(moi.id))] : []),
-                    ...autres.map((i) => esc(i.surnom) + emoji(i.reaction))];
-      const texteNoms = noms.length === 0 ? 'Personne du cercle pour l’instant'
-        : noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
-      const pastilles = [...(moi ? [pastille(profil.animal)] : []), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
+      // Confidentialité : on ne voit qui y va que si on y va soi-même. Sinon, un nombre.
+      const autres = moi ? (parCle.get(s.cle) || []).filter((i) => !mesIds.has(i.id)) : [];
+      let texteNoms, pastilles = '';
+      if (moi) {
+        const noms = ['Toi' + emoji(reactionDe.get(moi.id)), ...autres.map((i) => esc(i.surnom) + emoji(i.reaction))];
+        texteNoms = noms.length === 1 ? noms[0] : `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}`;
+        pastilles = [pastille(profil.animal), ...autres.slice(0, 6).map((i) => pastille(i.animal))].join('');
+      } else {
+        const n = nombreA(s.cle);
+        texteNoms = n === 0 ? 'Personne du cercle pour l’instant'
+          : n === 1 ? '1 personne du cercle y va' : `${n} personnes du cercle y vont`;
+      }
 
       const chaque = c.rythme === 2 ? `Un ${JOURS[c.jour]} sur deux` : `Chaque ${JOURS[c.jour]}`;
       let action;
@@ -1074,6 +1079,7 @@
           <li>la liste des cours du cercle et leurs interruptions${NB};</li>
           <li>pour chaque séance à venir${NB}: le surnom, l’animal et la réaction de celles et ceux qui y vont.</li>
         </ul>
+        <p>On ne voit <strong>qui</strong> va à une séance que si l’on y va soi-même. Pour les autres séances, Corsia ne montre qu’un nombre${NB}: personne ne peut suivre l’emploi du temps de quelqu’un d’autre.</p>
         <p>Ta présence à une séance <strong>s’efface toute seule après la séance</strong>. Il n’y a pas d’historique${NB}: personne ne peut savoir qui est venu la semaine passée.</p>
         <p>Le serveur est hébergé en France, chez alwaysdata.</p>
         <h3>Ce que Corsia ne garde jamais</h3>
