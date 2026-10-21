@@ -295,21 +295,55 @@ try {
     switch ($action) {
 
         /* ----- Lire : cours, interruptions et inscriptions à venir ----- */
+        /* Confidentialité : les noms ne sont envoyés que pour les séances où la personne
+           qui demande est elle-même annoncée (elle le prouve avec les jetons de ses présences).
+           Pour toutes les autres séances, seulement un nombre. Personne ne peut ainsi
+           reconstituer l'emploi du temps d'un autre membre. */
         case 'semaine':
             $auj = aujourdhui();
+            $miennes = [];                                   // séances « cours|date » où la personne est annoncée
+            $preuves = $entree['miens'] ?? [];
+            if (is_array($preuves)) {
+                $st = $db->prepare('SELECT cours, date, jeton_hash FROM inscriptions WHERE id = ? AND cercle = ?');
+                foreach (array_slice($preuves, 0, 100) as $p) {
+                    if (!is_array($p) || !is_string($p['id'] ?? null) || !is_string($p['jeton'] ?? null)) continue;
+                    $st->execute([$p['id'], $code]);
+                    $i = $st->fetch();
+                    if ($i && hash_equals($i['jeton_hash'], empreinte($p['jeton']))) $miennes[$i['cours'] . '|' . $i['date']] = true;
+                }
+            }
             $st = $db->prepare('SELECT id, cours, date, surnom, animal, reaction FROM inscriptions
                                 WHERE cercle = ? AND date BETWEEN ? AND ? ORDER BY rowid');
             $st->execute([$code, $auj, dans(FENETRE_JOURS)]);
-            $inscriptions = $st->fetchAll();
+            $inscriptions = [];
+            $comptes = [];
+            foreach ($st->fetchAll() as $i) {
+                $k = $i['cours'] . '|' . $i['date'];
+                $comptes[$k] = ($comptes[$k] ?? 0) + 1;
+                if (isset($miennes[$k])) $inscriptions[] = $i;
+            }
             $st = $db->prepare('SELECT id, cours, du, au FROM interruptions WHERE cercle = ? ORDER BY du');
             $st->execute([$code]);
             $rep = ['nom' => $cer['nom'], 'cours' => cours_publics($db, $code, 'ok'),
-                    'interruptions' => $st->fetchAll(), 'inscriptions' => $inscriptions];
-            if (est_admin($cer, $_GET['admin'] ?? '')) {
+                    'interruptions' => $st->fetchAll(), 'inscriptions' => $inscriptions,
+                    'comptes' => (object)$comptes];
+            if (est_admin($cer, $entree['admin'] ?? ($_GET['admin'] ?? ''))) {
                 $rep['admin'] = true;
                 $rep['propositions'] = cours_publics($db, $code, 'propose');
             }
             repondre($rep);
+
+        /* ----- Surnom et animal déjà utilisés par quelqu'un d'autre ? (oui ou non, rien de plus) ----- */
+        case 'surnom_pris':
+            if ($methode !== 'POST') erreur('POST attendu', 405);
+            $surnom = texte($entree['surnom'] ?? '', MAX_SURNOM);
+            $animal = (string)($entree['animal'] ?? '');
+            $exclus = array_values(array_filter(array_slice((array)($entree['exclus'] ?? []), 0, 100), 'is_string'));
+            $sql = 'SELECT 1 FROM inscriptions WHERE cercle = ? AND date >= ? AND lower(surnom) = lower(?) AND animal = ?';
+            if ($exclus) $sql .= ' AND id NOT IN (' . implode(',', array_fill(0, count($exclus), '?')) . ')';
+            $st = $db->prepare($sql . ' LIMIT 1');
+            $st->execute(array_merge([$code, aujourdhui(), $surnom, $animal], $exclus));
+            repondre(['pris' => (bool)$st->fetchColumn()]);
 
         /* ----- S'inscrire à une séance ----- */
         case 'inscrire':
