@@ -186,7 +186,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.23';
+  const VERSION = '3.24';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -650,10 +650,10 @@
         // Trois réglages, qui montrent tous un état : cette séance, l'habitude, le petit mot.
         const seance = `<div class="bascule" role="group" aria-label="Cette séance">
             <button ${moi ? 'aria-pressed="true"' : `aria-pressed="false" data-venir="${s.cle}"`}>J’y vais</button>
-            <button ${moi ? `aria-pressed="false" data-retirer="${s.cle}"` : 'aria-pressed="true"'}>Pas cette fois</button>
+            <button ${moi ? `aria-pressed="false" data-retirer="${s.cle}"` : 'aria-pressed="true"'}>${habituel ? 'Pas cette fois' : 'Je n’y vais pas'}</button>
           </div>`;
         const habitude = c.rythme === 0 ? '' : `<button class="interrupteur" role="switch" aria-checked="${habituel}"
-            ${habituel ? `data-oublier="${c.id}"` : `data-adopter="${s.cle}"`}>
+            ${habituel ? `data-oublier="${c.id}" data-garder="${s.cle}"` : `data-adopter="${s.cle}"`}>
             <span>${chaque}<span class="detail">${habituel ? 'Le cercle te voit chaque semaine' : 'Pour cette séance seulement'}</span></span>
             <span class="piste" aria-hidden="true"></span></button>`;
         let mot = '';
@@ -760,8 +760,13 @@
     $app.querySelectorAll('[data-oublier]').forEach((b) => b.onclick = () => agir(b, async () => {
       const id = b.dataset.oublier;
       habitudes = habitudes.filter((h) => h !== id); ecrire('habitudes', habitudes);
-      // Les séances déjà prévues restent : elles deviennent de simples venues « cette fois ».
-      for (const [k, m] of Object.entries(miennes)) if (k.startsWith(id + '|')) m.source = 'ponctuel';
+      // La séance de cette carte reste prévue, en « cette fois ». Les autres séances que l'habitude
+      // avait annoncées sont retirées ; celles annoncées « cette fois » restent.
+      for (const [k, m] of Object.entries(miennes)) {
+        if (!k.startsWith(id + '|')) continue;
+        if (k === b.dataset.garder) m.source = 'ponctuel';
+        else if (m.source === 'habitude') await retirer(k);
+      }
       ecrire('miennes', miennes);
       for (const k of Object.keys(absences)) if (k.startsWith(id + '|')) delete absences[k];
       ecrire('absences', absences);

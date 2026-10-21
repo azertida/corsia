@@ -1,7 +1,7 @@
 /* Corsia — mise en cache de l'appli pour qu'elle s'ouvre vite.
    À chaque mise à jour, augmenter CACHE_NAME pour que les téléphones reprennent les nouveaux fichiers.
    Le serveur des inscriptions (autre adresse) n'est jamais mis en cache. */
-const CACHE_NAME = 'corsia-v3.23';
+const CACHE_NAME = 'corsia-v3.24';
 const FICHIERS = [
   './', './index.html', './qrcode.js', './manifest.webmanifest',
   './icones/icon-192.png', './icones/icon-512.png', './icones/apple-touch-icon.png', './icones/favicon-32.png',
