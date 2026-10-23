@@ -93,6 +93,17 @@
   .jours button small { font-weight: 400; font-size: 13px; color: var(--doux); }
   .jours button[aria-pressed="true"] { background: var(--bleu); border-color: var(--bleu); color: #fff; }
   .jours button[aria-pressed="true"] small { color: #fff; }
+  .agenda { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
+  .agenda::-webkit-scrollbar { display: none; }
+  .agenda button { flex: none; width: 74px; min-height: 92px; padding: 6px 4px; border-radius: 12px; border: 1.5px solid var(--bord-fort);
+                   background: var(--carte); color: var(--encre); display: flex; flex-direction: column; align-items: center; gap: 2px;
+                   font-size: 13px; line-height: 1.2; }
+  .agenda button.vide { background: transparent; border-style: dashed; color: var(--doux); }
+  .agenda .j { font-weight: 700; font-size: 15px; }
+  .agenda .n { color: var(--doux); }
+  .agenda .points { color: var(--bleu); font-size: 12px; letter-spacing: 2px; min-height: 15px; }
+  .agenda .cours { font-weight: 700; max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .agenda .plus { color: var(--doux); }
   .bascule { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--sable); border-radius: 14px; padding: 4px; }
   .bascule button { min-height: 44px; border: none; border-radius: 11px; background: transparent; font-weight: 700; font-size: 16px; }
   .bascule button[aria-pressed="true"] { background: var(--bleu); color: #fff; }
@@ -186,7 +197,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.25';
+  const VERSION = '3.26';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -217,6 +228,7 @@
   let ecran = 'semaine';
   let jourVu = null;   // jour affiché dans « Tous les cours »
   let defilJours = 0;  // position de la rangée de jours, gardée d'un affichage à l'autre
+  let defilAgenda = 0; // idem pour le petit agenda de « Mes cours »
   let ouvert = null;                          // formulaire d'interruption ouvert (id du cours, ou 'club')
 
   /* ================= Outils ================= */
@@ -615,6 +627,25 @@
         }).join('')}
       </div>`;
 
+    // « Mes cours » : petit agenda des 9 jours, un sommaire qui mène aux cartes.
+    const agenda = filtre !== 'miens' ? '' : (() => {
+      const cases = [];
+      for (let i = 0; i <= FENETRE; i++) {
+        const d = iso(new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + i));
+        const miennesDuJour = toutes.filter((s) => s.date === d && !s.coupure && estMien(s));
+        const haut = d === aujourdhui() ? 'Auj.' : d === demain ? 'Dem.' : ABR[jourIso(versDate(d))];
+        if (!miennesDuJour.length) { cases.push(`<button class="vide" disabled><span class="j">${haut}</span><span class="n">${Number(d.slice(8))}</span></button>`); continue; }
+        const points = miennesDuJour.map((s) => miennes[s.cle] ? '●' : '○').join('');
+        const p = miennesDuJour[0];
+        const court = p.cours.nom.replace(/\s*\(.*\)\s*/g, ' ').trim();
+        cases.push(`<button data-aller="${d}" aria-label="${dateFr(d)} : ${miennesDuJour.map((s) => esc(s.cours.nom) + ' ' + heureFr(s.cours.heure)).join(', ')}">
+          <span class="j">${haut}</span><span class="n">${Number(d.slice(8))}</span><span class="points">${points}</span>
+          <span class="cours">${esc(court)}</span><span class="n">${heureFr(p.cours.heure).replace(' ', '')}</span>
+          ${miennesDuJour.length > 1 ? `<span class="plus">+${NB}${miennesDuJour.length - 1}</span>` : ''}</button>`);
+      }
+      return `<div class="agenda" role="group" aria-label="Mon agenda">${cases.join('')}</div>`;
+    })();
+
     const emoji = (r) => { const t = REACTIONS.filter((y) => (r || '').split(',').includes(y[0])).map((y) => y[1]).join(''); return t ? NB + t : ''; };
 
     const cartes = liste.map((s) => {
@@ -628,7 +659,7 @@
         const texte = !i.cours ? 'Club fermé'
           : i.du === i.au ? 'Pas de cours ce jour-là'
           : `Pas de cours jusqu’au ${dateCourte(i.au)}`;
-        return `<article class="carte annulee">${entete}<span class="mention">${texte}</span></article>`;
+        return `<article class="carte annulee" data-date="${s.date}">${entete}<span class="mention">${texte}</span></article>`;
       }
       const moi = miennes[s.cle];
       const habituel = habitudes.includes(c.id);
@@ -677,7 +708,7 @@
           </div>`;
       }
       return `
-        <article class="carte${moi ? ' mienne' : ''}">
+        <article class="carte${moi ? ' mienne' : ''}" data-date="${s.date}">
           ${entete}
           <div class="qui">${pastilles}<span class="noms">${texteNoms}</span></div>
           ${action}
@@ -718,7 +749,7 @@
             <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
             <button data-filtre="tous" aria-pressed="${filtre === 'tous'}">Tous les cours</button>
           </div>
-          ${bandeJours}
+          ${bandeJours}${agenda}
         </div>
         ${corps}
         ${filtre === 'miens' && cachees ? `<p class="doux" style="text-align:center">${cachees} autre${cachees > 1 ? 's' : ''} séance${cachees > 1 ? 's' : ''} dans «${NB}Tous les cours${NB}»</p>` : ''}
@@ -746,6 +777,18 @@
     $app.querySelectorAll('[data-jour]').forEach((b) => b.onclick = () => { jourVu = b.dataset.jour; afficher(); remonter(); });
     // La rangée de jours garde sa position quand l'écran se redessine (après un choix sur une carte, par exemple),
     // et se décale juste ce qu'il faut si le jour choisi est caché.
+    // Agenda : garder sa position, et toucher un jour mène à ses cartes.
+    const ag = $app.querySelector('.agenda');
+    if (ag) {
+      ag.scrollLeft = defilAgenda;
+      ag.addEventListener('scroll', () => { defilAgenda = ag.scrollLeft; }, { passive: true });
+      ag.querySelectorAll('[data-aller]').forEach((b) => b.onclick = () => {
+        const carte = $app.querySelector(`.carte[data-date="${b.dataset.aller}"]`); if (!carte) return;
+        const collant = $app.querySelector('.collant');
+        const y = carte.getBoundingClientRect().top + window.scrollY - (collant ? collant.offsetHeight : 0) - 12;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      });
+    }
     const bande = $app.querySelector('.jours');
     if (bande) {
       bande.scrollLeft = defilJours;
