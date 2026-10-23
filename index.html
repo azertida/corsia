@@ -43,7 +43,9 @@
   button { cursor: pointer; }
   a { color: var(--bleu); }
 
-  .entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 24px 4px 16px; }
+  .entete { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 6px; }
+  .entete h1 { line-height: 1.05; }
+  .titre-semaine { margin-bottom: -8px; }
   .entete .sous { font-size: 16px; color: var(--doux); }
   .retour { display: flex; align-items: center; gap: 4px; padding: 20px 0 8px; }
   .retour button { background: none; border: none; color: var(--bleu); font-weight: 700; min-height: 46px; padding: 0 8px 0 0; display: flex; align-items: center; gap: 4px; }
@@ -84,7 +86,7 @@
   .lien { background: none; border: none; color: var(--ocre); font-weight: 700; min-height: 44px; padding: 0 6px; display: inline-flex; align-items: center; gap: 8px; }
 
   .collant { position: sticky; top: env(safe-area-inset-top); z-index: 5; background: var(--creme);
-             margin: 0 -16px; padding: 8px 16px; display: flex; flex-direction: column; gap: 8px; }
+             margin: 0 -16px; padding: 6px 16px; display: flex; flex-direction: column; gap: 8px; }
   .jours { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px; }
   .jours::-webkit-scrollbar { display: none; }
   .jours button { flex: none; min-width: 58px; min-height: 54px; padding: 4px 8px; border-radius: 12px; border: 1.5px solid var(--bord-fort);
@@ -197,7 +199,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.26';
+  const VERSION = '3.28';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -738,12 +740,11 @@
         ${lire('rappelCle', false) && !cercle.admin ? `<div class="encadre"><strong>Tu gères ce cercle</strong>
           <p>Sur cet appareil, colle ta clé de gestion (rangée dans ton gestionnaire de mots de passe) pour retrouver l’ajout et l’interruption des cours.</p>
           <div class="rangee"><button class="btn plein" id="collerCle">Coller ma clé</button><button class="btn discret" id="pasMaintenant">Pas maintenant</button></div></div>` : ''}
-        <h2>Prochaines séances</h2>
+        <h2 id="ancreListe" class="titre-semaine">Prochaines séances</h2>
         ${!habitudes.length && donnees?.cours?.length && !Object.keys(miennes).length ? `<div class="encadre">
           <strong>Choisis tes cours</strong>
           <p>Sur les cours que tu suis, touche «${NB}${'Chaque…'}${NB}»${NB}: Corsia te montrera au cercle chaque semaine. Pour une seule séance, touche «${NB}Cette fois${NB}».</p>
           <p class="doux">Corsia ne réserve rien au club${NB}: elle montre seulement au cercle qui y va.</p></div>` : ''}
-        <div id="ancreListe"></div>
         <div class="collant">
           <div class="bascule" role="group" aria-label="Cours affichés">
             <button data-filtre="miens" aria-pressed="${filtre === 'miens'}">Mes cours</button>
