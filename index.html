@@ -186,7 +186,7 @@
 
   /* ================= Réglages ================= */
   const API = 'https://azertida.alwaysdata.net/corsia/api.php';
-  const VERSION = '3.24';
+  const VERSION = '3.25';
   const FENETRE = 9;               // comme au club : une séance s'ouvre 9 × 24 h avant son début
   const P = 'corsia.';             // préfixe du stockage local (même origine que les autres applis)
   const NB = ' ';             // espace fine insécable avant ? ! : ;
@@ -216,6 +216,7 @@
   let donnees = null;                         // réponse du serveur
   let ecran = 'semaine';
   let jourVu = null;   // jour affiché dans « Tous les cours »
+  let defilJours = 0;  // position de la rangée de jours, gardée d'un affichage à l'autre
   let ouvert = null;                          // formulaire d'interruption ouvert (id du cours, ou 'club')
 
   /* ================= Outils ================= */
@@ -743,7 +744,20 @@
     };
     $app.querySelectorAll('[data-filtre]').forEach((b) => b.onclick = () => { ecrire('filtre', b.dataset.filtre); afficher(); remonter(); });
     $app.querySelectorAll('[data-jour]').forEach((b) => b.onclick = () => { jourVu = b.dataset.jour; afficher(); remonter(); });
-    const choisi = $app.querySelector('.jours [aria-pressed="true"]'); if (choisi) choisi.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    // La rangée de jours garde sa position quand l'écran se redessine (après un choix sur une carte, par exemple),
+    // et se décale juste ce qu'il faut si le jour choisi est caché.
+    const bande = $app.querySelector('.jours');
+    if (bande) {
+      bande.scrollLeft = defilJours;
+      const choisi = bande.querySelector('[aria-pressed="true"]');
+      if (choisi) {
+        const r = choisi.getBoundingClientRect(), br = bande.getBoundingClientRect();
+        if (r.left < br.left) bande.scrollLeft -= br.left - r.left + 16;
+        else if (r.right > br.right) bande.scrollLeft += r.right - br.right + 16;
+      }
+      defilJours = bande.scrollLeft;
+      bande.addEventListener('scroll', () => { defilJours = bande.scrollLeft; }, { passive: true });
+    }
     $app.querySelectorAll('[data-venir]').forEach((b) => b.onclick = () => agir(b, async () => {
       const s = toutes.find((x) => x.cle === b.dataset.venir);
       delete absences[s.cle]; ecrire('absences', absences);
